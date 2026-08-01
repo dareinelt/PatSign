@@ -14,23 +14,109 @@ final class LocalAiClient
     /** @param array<string,mixed> $payload */
     public function chat(array $payload): array
     {
-        $url = sprintf('%s:%d/v1/chat/completions', rtrim((string) $this->config['host'], '/'), (int) $this->config['port']);
-        $ch = curl_init($url);
+        return $this->request('POST', '/v1/chat/completions', $payload);
+    }
+
+    /**
+     * Lädt die am Endpunkt verfügbaren Modelle (OpenAI-kompatibel: GET /v1/models).
+     *
+     * @return list<string>
+     */
+    public function listModels(): array
+    {
+        $response = $this->request('GET', '/v1/models');
+        $models = [];
+        foreach ((array) ($response['data'] ?? []) as $entry) {
+            if (is_array($entry) && isset($entry['id'])) {
+                $models[] = (string) $entry['id'];
+            }
+        }
+        sort($models);
+
+        return $models;
+    }
+
+    /**
+     * Prüft die Erreichbarkeit des Endpunkts und optional das konfigurierte Modell.
+     *
+     * @return array{success:bool,message:string,models:list<string>}
+     */
+    public function testConnection(): array
+    {
+        $models = $this->listModels();
+        $model = trim((string) ($this->config['model'] ?? ''));
+
+        if ($model !== '' && $models !== [] && !in_array($model, $models, true)) {
+            return [
+                'success' => false,
+                'message' => sprintf('Endpunkt erreichbar, aber Modell "%s" wurde nicht gefunden.', $model),
+                'models' => $models,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => $models === []
+                ? 'Endpunkt erreichbar (keine Modell-Liste verfügbar).'
+                : sprintf('Endpunkt erreichbar, %d Modell(e) gefunden.', count($models)),
+            'models' => $models,
+        ];
+    }
+
+    /**
+     * Basis-URL aus Host und Port bilden. Toleriert Hosts mit bereits
+     * enthaltenem Port oder "/v1"-Suffix (z. B. "http://192.168.1.10:1234/v1").
+     */
+    private function baseUrl(): string
+    {
+        $host = rtrim(trim((string) $this->config['host']), '/');
+        if ($host !== '' && !preg_match('~^https?://~i', $host)) {
+            $host = 'http://' . $host;
+        }
+        if (preg_match('~/v1$~i', $host)) {
+            $host = substr($host, 0, -3);
+            $host = rtrim($host, '/');
+        }
+
+        $port = (int) ($this->config['port'] ?? 0);
+        $hasPort = parse_url($host, PHP_URL_PORT) !== null;
+        if ($port > 0 && !$hasPort) {
+            $parts = parse_url($host);
+            $path = $parts['path'] ?? '';
+            $base = ($parts['scheme'] ?? 'http') . '://' . ($parts['host'] ?? '');
+            $host = $base . ':' . $port . $path;
+        }
+
+        return rtrim($host, '/');
+    }
+
+    /** @param array<string,mixed>|null $payload */
+    private function request(string $method, string $path, ?array $payload = null): array
+    {
+        $ch = curl_init($this->baseUrl() . $path);
+
+        $headers = ['Content-Type: application/json'];
+        $apiKey = trim((string) ($this->config['api_key'] ?? ''));
+        if ($apiKey !== '') {
+            $headers[] = 'Authorization: Bearer ' . $apiKey;
+        }
 
         curl_setopt_array($ch, [
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . (string) $this->config['api_key'],
-            ],
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload, JSON_THROW_ON_ERROR),
+            CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => (int) $this->config['timeout'],
+            CURLOPT_TIMEOUT => max(1, (int) ($this->config['timeout'] ?? 30)),
         ]);
+
+        if ($method === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload ?? [], JSON_THROW_ON_ERROR));
+        }
 
         $result = curl_exec($ch);
         if ($result === false) {
-            throw new RuntimeException('Lokaler KI-Dienst nicht erreichbar: ' . curl_error($ch));
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new RuntimeException('Lokaler KI-Dienst nicht erreichbar: ' . $error);
         }
 
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
