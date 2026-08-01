@@ -22,7 +22,8 @@
 
 Nach erfolgreicher Unterschrift wird an jedes Dokument einzeln eine Abschlussseite angehängt. Das Ergebnis wird unter `storage/processed` abgelegt und zusätzlich in den Export-Pfad (Netzwerkfreigabe) kopiert.
 
-- Inhalte (Kopfzeile, Einleitungstext, E-Mail-Zustellungstexte, Bestätigungssatz, Fußzeile) sind unter *Administration → Abschlussseite* pflegbar.
-- Platzhalter: `{nachname}`, `{vorname}`, `{geburtsdatum}`, `{fallnummer}`, `{dokumententyp}`, `{dateiname}`, `{klinik}`, `{ort}`, `{datum}`, `{uhrzeit}`, `{email}`, `{bearbeiter}`, `{beginn}`.
+- Inhalte (Kopfblock, Einleitungstext, Überschriften, Checkbox-Texte zum E-Mail-Versand, Bestätigungssatz, Bearbeitungsinformationen) sind unter *Administration → Abschlussseite* pflegbar.
+- Platzhalter: `{nachname}`, `{vorname}`, `{geburtsdatum}`, `{fallnummer}`, `{dokumententyp}`, `{dateiname}`, `{klinik}`, `{ort}`, `{datum}`, `{uhrzeit}`, `{email}`, `{bearbeiter}`, `{beginn}`, `{document_id}`, `{status}`, `{geraet}` — alle Platzhalter werden bei der Ausgabe befüllt (fehlende Werte erscheinen als „unbekannt“ bzw. als Leerlinie bei der E-Mail-Adresse).
+- Der E-Mail-Versand wird als Kontrollkästchen dargestellt: Je nach Wunsch des Patienten ist „Versand gewünscht“ oder „kein Versand“ angekreuzt.
 - Klinikname und Ort werden unter *Administration → Allgemein* gepflegt und automatisch übernommen.
-- Die digitale Unterschrift des Patienten sowie Ort und aktuelles Datum werden automatisch unterhalb des Bestätigungssatzes eingefügt.
+- Die digitale Unterschrift des Patienten (Zeile „Digitale Signatur:“) sowie Ort und aktuelles Datum werden automatisch unterhalb des Bestätigungssatzes eingefügt.

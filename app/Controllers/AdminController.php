@@ -343,9 +343,12 @@ final class AdminController extends BaseController
             'completion-page' => [
                 'header_template' => 'completion.header_template',
                 'body_template' => 'completion.body_template',
+                'email_section_title' => 'completion.email_section_title',
                 'email_consent_template' => 'completion.email_consent_template',
                 'email_no_consent_template' => 'completion.email_no_consent_template',
+                'confirmation_title' => 'completion.confirmation_title',
                 'signed_statement' => 'completion.signed_statement',
+                'footer_title' => 'completion.footer_title',
                 'footer_template' => 'completion.footer_template',
             ],
             'ai' => [

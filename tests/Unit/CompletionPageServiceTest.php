@@ -47,6 +47,7 @@ final class CompletionPageServiceTest extends TestCase
     {
         $vars = $this->service->placeholderValues(
             [
+                'document_id' => '0b9a7c1e-1111-2222-3333-444455556666',
                 'last_name' => 'Vogel',
                 'first_name' => 'Hans-Dieter',
                 'birth_date' => '1960-02-01',
@@ -57,6 +58,8 @@ final class CompletionPageServiceTest extends TestCase
                 'final_name' => '92546499_VogelHansDieter_19600201_Patientenvertrag.pdf',
                 'email' => 'patient@example.com',
                 'operator' => 'admin',
+                'status' => 'signed',
+                'device' => 'iPad Station 1',
                 'signed_at' => '2026-08-01 16:48:00',
                 'started_at' => strtotime('2026-08-01 16:30:00'),
             ]
@@ -74,6 +77,9 @@ final class CompletionPageServiceTest extends TestCase
         self::assertSame('16:48', $vars['uhrzeit']);
         self::assertSame('16:30', $vars['beginn']);
         self::assertSame('admin', $vars['bearbeiter']);
+        self::assertSame('0b9a7c1e-1111-2222-3333-444455556666', $vars['document_id']);
+        self::assertSame('Unterschrieben', $vars['status']);
+        self::assertSame('iPad Station 1', $vars['geraet']);
     }
 
     public function testPlaceholderValuesFallsBackToSignedAtWhenStartMissing(): void
@@ -84,5 +90,17 @@ final class CompletionPageServiceTest extends TestCase
         );
 
         self::assertSame('16:48', $vars['beginn']);
+    }
+
+    public function testAllPlaceholdersAreFilledWhenDataIsMissing(): void
+    {
+        $vars = $this->service->placeholderValues([], ['signed_at' => '2026-08-01 16:48:00']);
+
+        foreach ($vars as $key => $value) {
+            self::assertNotSame('', trim($value), "Platzhalter {$key} darf nicht leer sein");
+        }
+        self::assertSame('_______________________', $vars['email']);
+        self::assertSame('Unterschrieben', $vars['status']);
+        self::assertSame('unbekannt', $vars['geraet']);
     }
 }

@@ -16,12 +16,15 @@ use setasign\Fpdi\Fpdi;
  */
 final class CompletionPageService
 {
-    public const DEFAULT_HEADER = '{nachname}, {vorname}, {geburtsdatum}, Fallnummer {fallnummer}, {dokumententyp}, {dateiname}';
-    public const DEFAULT_BODY = 'Der Patient ({nachname}, {vorname} ({geburtsdatum})) war am {datum} Patient im {klinik} und hat folgendes Dokument ({dokumententyp}, {dateiname}) am {datum} um {uhrzeit} Uhr zur digitalen Unterschrift vorgelegt bekommen.';
-    public const DEFAULT_EMAIL_CONSENT = 'Der Patient wünscht eine Zustellung einer digitalen Kopie des Dokuments per E-Mail an {email}.';
-    public const DEFAULT_EMAIL_NO_CONSENT = 'Der Patient wünscht keine digitale Zustellung einer digitalen Kopie des Dokuments per E-Mail.';
+    public const DEFAULT_HEADER = "Patient: {nachname}, {vorname}\nGeburtsdatum: {geburtsdatum}\nFallnummer: {fallnummer}\nDokumententyp: {dokumententyp}\nExport-Dateiname: {dateiname}";
+    public const DEFAULT_BODY = "Der Patient ({nachname}, {vorname}, {geburtsdatum}) befand sich am {datum} zur Behandlung im {klinik}.\n\nAm {datum} um {uhrzeit} Uhr wurde dem Patienten das Dokument ({dokumententyp}) (Export-Dateiname: {dateiname}) zur digitalen Unterschrift vorgelegt.";
+    public const DEFAULT_EMAIL_SECTION_TITLE = 'Versand der digitalen Kopie';
+    public const DEFAULT_EMAIL_CONSENT = 'Der Patient wünscht den Versand einer digitalen Kopie per E-Mail an: {email}';
+    public const DEFAULT_EMAIL_NO_CONSENT = 'Der Patient wünscht keinen Versand einer digitalen Kopie.';
+    public const DEFAULT_CONFIRMATION_TITLE = 'Bestätigung';
     public const DEFAULT_SIGNED_STATEMENT = 'Der Patient hat das oben genannte Dokument digital unterschrieben.';
-    public const DEFAULT_FOOTER = 'Vorgang bearbeitet durch {bearbeiter}, begonnen um {beginn} Uhr';
+    public const DEFAULT_FOOTER_TITLE = 'Bearbeitungsinformationen';
+    public const DEFAULT_FOOTER = "• Bearbeitet durch: {bearbeiter}\n• Beginn des Vorgangs: {beginn} Uhr\n• Document-ID: {document_id}\n• Status des Signaturprozesses: {status}\n• Verwendetes Endgerät: {geraet}";
 
     public function __construct(
         private readonly SettingsService $settings,
@@ -34,7 +37,8 @@ final class CompletionPageService
      *
      * @param array<string,mixed> $document Dokument-Datensatz (documents-Tabelle)
      * @param array<string,mixed> $context  signature_data, email_consent, email,
-     *                                      operator, started_at, signed_at, final_name
+     *                                      operator, status, device, started_at,
+     *                                      signed_at, final_name
      * @return array{signed_pdf_path:string,completion_page_path:string}
      */
     public function appendToDocument(array $document, array $context): array
@@ -102,21 +106,40 @@ final class CompletionPageService
             $birthDate = date('d.m.Y', $ts);
         }
 
+        $email = trim((string) ($context['email'] ?? ''));
+        $statusLabels = [
+            'imported' => 'Importiert',
+            'analyzed' => 'Analysiert',
+            'signed' => 'Unterschrieben',
+            'sent' => 'Versendet',
+            'archived' => 'Archiviert',
+        ];
+        $status = (string) ($context['status'] ?? 'signed');
+
         return [
-            'nachname' => (string) ($document['last_name'] ?? ''),
-            'vorname' => (string) ($document['first_name'] ?? ''),
-            'geburtsdatum' => $birthDate,
-            'fallnummer' => (string) ($document['case_number'] ?? ''),
-            'dokumententyp' => (string) ($document['document_type'] ?? 'Unbekannt'),
-            'dateiname' => (string) ($context['final_name'] ?? ''),
+            'nachname' => $this->filled((string) ($document['last_name'] ?? '')),
+            'vorname' => $this->filled((string) ($document['first_name'] ?? '')),
+            'geburtsdatum' => $this->filled($birthDate),
+            'fallnummer' => $this->filled((string) ($document['case_number'] ?? '')),
+            'dokumententyp' => (string) (($document['document_type'] ?? '') !== '' ? $document['document_type'] : 'Unbekannt'),
+            'dateiname' => $this->filled((string) ($context['final_name'] ?? '')),
             'klinik' => $this->settings->getString('general.clinic_name', 'PatSign'),
-            'ort' => $this->settings->getString('general.clinic_location', ''),
+            'ort' => $this->filled($this->settings->getString('general.clinic_location', ''), '____________'),
             'datum' => date('d.m.Y', $signedAt),
             'uhrzeit' => date('H:i', $signedAt),
-            'email' => (string) ($context['email'] ?? ''),
-            'bearbeiter' => (string) ($context['operator'] ?? ''),
+            'email' => $this->filled($email, '_______________________'),
+            'bearbeiter' => $this->filled((string) ($context['operator'] ?? '')),
             'beginn' => date('H:i', $startedAt),
+            'document_id' => $this->filled((string) ($document['document_id'] ?? '')),
+            'status' => $statusLabels[$status] ?? $this->filled($status),
+            'geraet' => $this->filled((string) ($context['device'] ?? '')),
         ];
+    }
+
+    /** Stellt sicher, dass Platzhalter nie leer ausgegeben werden. */
+    private function filled(string $value, string $fallback = 'unbekannt'): string
+    {
+        return trim($value) !== '' ? $value : $fallback;
     }
 
     /**
@@ -192,7 +215,7 @@ final class CompletionPageService
         $pdf->SetAutoPageBreak(false);
         $pdf->SetMargins(20, 15, 20);
 
-        // Kopfzeile mit Patientendaten
+        // Kopfblock mit Patientendaten
         $pdf->SetY(15);
         $pdf->SetFont('Helvetica', '', 9);
         $pdf->SetTextColor(90, 90, 90);
@@ -200,42 +223,71 @@ final class CompletionPageService
         $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($header, $vars)));
 
         // Fließtext
-        $pdf->SetY(50);
+        $pdf->SetY(55);
         $pdf->SetFont('Helvetica', '', 11);
         $pdf->SetTextColor(0, 0, 0);
         $body = $this->settings->getString('completion.body_template', self::DEFAULT_BODY);
         $pdf->MultiCell(0, 6, $this->encode($this->renderTemplate($body, $vars)));
-        $pdf->Ln(6);
+        $pdf->Ln(8);
 
-        $emailTemplate = $emailConsent
-            ? $this->settings->getString('completion.email_consent_template', self::DEFAULT_EMAIL_CONSENT)
-            : $this->settings->getString('completion.email_no_consent_template', self::DEFAULT_EMAIL_NO_CONSENT);
-        $pdf->MultiCell(0, 6, $this->encode($this->renderTemplate($emailTemplate, $vars)));
-        $pdf->Ln(6);
+        // Versand der digitalen Kopie (Checkboxen)
+        $pdf->SetFont('Helvetica', 'B', 11);
+        $pdf->MultiCell(0, 6, $this->encode($this->settings->getString('completion.email_section_title', self::DEFAULT_EMAIL_SECTION_TITLE)));
+        $pdf->Ln(2);
+        $pdf->SetFont('Helvetica', '', 11);
+        $consentText = $this->settings->getString('completion.email_consent_template', self::DEFAULT_EMAIL_CONSENT);
+        $noConsentText = $this->settings->getString('completion.email_no_consent_template', self::DEFAULT_EMAIL_NO_CONSENT);
+        $this->checkboxLine($pdf, $this->renderTemplate($consentText, $vars), $emailConsent);
+        $pdf->Ln(2);
+        $this->checkboxLine($pdf, $this->renderTemplate($noConsentText, $vars), !$emailConsent);
+        $pdf->Ln(8);
 
+        // Bestätigung
+        $pdf->SetFont('Helvetica', 'B', 11);
+        $pdf->MultiCell(0, 6, $this->encode($this->settings->getString('completion.confirmation_title', self::DEFAULT_CONFIRMATION_TITLE)));
+        $pdf->Ln(2);
+        $pdf->SetFont('Helvetica', '', 11);
         $statement = $this->settings->getString('completion.signed_statement', self::DEFAULT_SIGNED_STATEMENT);
         $pdf->MultiCell(0, 6, $this->encode($this->renderTemplate($statement, $vars)));
-        $pdf->Ln(12);
+        $pdf->Ln(10);
 
-        // Digitale Unterschrift aus dem Prozess
+        // Digitale Signatur aus dem Prozess
+        $pdf->Cell(40, 6, $this->encode('Digitale Signatur:'), 0, 0);
         $signatureFile = $this->signatureImageFile($signatureData);
         if ($signatureFile !== null) {
-            $pdf->Image($signatureFile, 20, $pdf->GetY(), 70, 0, 'PNG');
+            $pdf->Image($signatureFile, 62, $pdf->GetY() - 6, 60, 0, 'PNG');
             @unlink($signatureFile);
-            $pdf->Ln(35);
+            $pdf->Ln(24);
         } else {
-            $pdf->Ln(25);
+            $pdf->Cell(0, 6, '___________________________', 0, 1);
+            $pdf->Ln(8);
         }
 
-        $pdf->Cell(90, 6, str_repeat('_', 55), 0, 1);
-        $pdf->Cell(0, 6, $this->encode(trim($vars['ort'] . ', ' . $vars['datum'], ', ')), 0, 1);
+        $pdf->Cell(0, 6, $this->encode('Ort: ' . $vars['ort'] . '    Datum: ' . $vars['datum']), 0, 1);
 
-        // Fußzeile
-        $pdf->SetY(-25);
-        $pdf->SetFont('Helvetica', '', 9);
+        // Bearbeitungsinformationen
+        $pdf->SetY(-48);
+        $pdf->SetFont('Helvetica', 'B', 9);
         $pdf->SetTextColor(90, 90, 90);
+        $pdf->MultiCell(0, 5, $this->encode($this->settings->getString('completion.footer_title', self::DEFAULT_FOOTER_TITLE)));
+        $pdf->SetFont('Helvetica', '', 9);
         $footer = $this->settings->getString('completion.footer_template', self::DEFAULT_FOOTER);
         $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($footer, $vars)));
+    }
+
+    /** Zeichnet eine Zeile mit Kontrollkästchen (angekreuzt oder leer). */
+    private function checkboxLine(Fpdi $pdf, string $text, bool $checked): void
+    {
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+        $pdf->Rect($x, $y + 1, 4, 4);
+        if ($checked) {
+            $pdf->SetFont('Helvetica', 'B', 10);
+            $pdf->Text($x + 0.8, $y + 4.4, 'X');
+            $pdf->SetFont('Helvetica', '', 11);
+        }
+        $pdf->SetX($x + 7);
+        $pdf->MultiCell(0, 6, $this->encode($text));
     }
 
     /** Schreibt die Signatur (Data-URL, PNG) in eine temporäre Datei. */

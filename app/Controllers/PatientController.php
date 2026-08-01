@@ -150,6 +150,8 @@ final class PatientController extends BaseController
                     'email_consent' => $emailConsent,
                     'email' => $emailConsent ? $email : '',
                     'operator' => $operator,
+                    'status' => 'signed',
+                    'device' => 'Personal-Arbeitsplatz',
                     'started_at' => (int) ($session['started_at'] ?? 0),
                     'signed_at' => $signedAt,
                     'final_name' => $finalName,

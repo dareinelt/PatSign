@@ -238,6 +238,8 @@ final class KioskController extends BaseController
                     'email_consent' => $emailConsent,
                     'email' => $emailConsent ? $email : '',
                     'operator' => $operator,
+                    'status' => 'signed',
+                    'device' => (string) ($device['name'] ?? ''),
                     'started_at' => (string) ($session['started_at'] ?? ($assignment['assigned_at'] ?? '')),
                     'signed_at' => $signedAt,
                     'final_name' => $finalName,
