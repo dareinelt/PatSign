@@ -32,6 +32,8 @@ return static function (
     // Dashboard (medizinisches Personal)
     $router->get('/dashboard', static fn () => $dashboard->index());
     $router->get('/dashboard/data', static fn () => $dashboard->data());
+    $router->get('/dashboard/signed', static fn () => $dashboard->signedToday());
+    $router->get('/dashboard/signed/document', static fn (Request $request) => $dashboard->signedDocument($request));
     $router->get('/dashboard/search', static fn (Request $request) => $dashboard->search($request));
 
     // Dokumente

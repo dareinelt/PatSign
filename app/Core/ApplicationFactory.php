@@ -166,6 +166,7 @@ final class ApplicationFactory
         $dashboardController = new DashboardController(
             $container->get(View::class),
             $container->get(DocumentRepository::class),
+            $container->get(SignatureRepository::class),
             $container->get(AuditLogRepository::class),
             $container->get(SystemStatusService::class),
             $container->get(SettingsService::class),

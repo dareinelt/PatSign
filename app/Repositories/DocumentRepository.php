@@ -61,6 +61,24 @@ final class DocumentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /**
+     * Heute unterschriebene Dokumente inkl. Signaturzeitpunkt.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function signedToday(): array
+    {
+        $sql = "SELECT d.id, d.document_type, d.case_number, d.first_name, d.last_name, d.status,
+                       MAX(s.signed_at) AS signed_at, MAX(s.operator_name) AS operator_name
+                FROM documents d
+                INNER JOIN signatures s ON s.document_id = d.id
+                WHERE DATE(s.signed_at) = CURDATE()
+                GROUP BY d.id, d.document_type, d.case_number, d.first_name, d.last_name, d.status
+                ORDER BY signed_at DESC";
+
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function search(string $term, int $limit = 25): array
     {
