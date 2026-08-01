@@ -1,12 +1,14 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --ignore-platform-req=ext-gd
 
 FROM php:8.4-apache AS app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev libicu-dev libonig-dev libxml2-dev ghostscript imagemagick libmagickwand-dev unzip \
-    && docker-php-ext-install zip pdo pdo_mysql opcache \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+    && docker-php-ext-install gd zip pdo pdo_mysql opcache \
     && pecl install imagick && docker-php-ext-enable imagick \
     && a2enmod rewrite headers ssl \
     && rm -rf /var/lib/apt/lists/*
