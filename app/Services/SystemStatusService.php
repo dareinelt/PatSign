@@ -14,7 +14,8 @@ final class SystemStatusService
 {
     public function __construct(
         private readonly ?PDO $pdo,
-        private readonly SettingsService $settings
+        private readonly SettingsService $settings,
+        private readonly ?NetworkShareService $networkShare = null
     ) {}
 
     /** @return array<int,array{key:string,label:string,status:string,detail:string}> */
@@ -26,8 +27,8 @@ final class SystemStatusService
         $checks[] = $this->checkAiEndpoint('vision', 'Vision-KI');
         $checks[] = $this->checkAiEndpoint('analysis', 'Analyse-KI');
         $checks[] = $this->checkPath('storage', 'Speicherpfad', dirname(__DIR__, 2) . '/storage');
-        $checks[] = $this->checkPath('import', 'Importpfad', $this->settings->getString('app.import_watch_path'));
-        $checks[] = $this->checkPath('export', 'Exportpfad', $this->settings->getString('app.network_share_path'));
+        $checks[] = $this->checkPath('import', 'Importpfad', $this->settings->getString('app.import_watch_path'), 'import');
+        $checks[] = $this->checkPath('export', 'Exportpfad', $this->settings->getString('app.network_share_path'), 'export');
         $checks[] = $this->checkSmtp();
 
         return $checks;
@@ -93,10 +94,19 @@ final class SystemStatusService
     }
 
     /** @return array{key:string,label:string,status:string,detail:string} */
-    private function checkPath(string $key, string $label, string $path): array
+    private function checkPath(string $key, string $label, string $path, string $credentialPrefix = ''): array
     {
         if ($path === '') {
             return ['key' => $key, 'label' => $label, 'status' => 'warn', 'detail' => 'Nicht konfiguriert'];
+        }
+
+        if ($credentialPrefix !== '' && $this->networkShare !== null) {
+            $this->networkShare->ensureConnection(
+                $path,
+                $this->settings->getString($credentialPrefix . '.share_domain'),
+                $this->settings->getString($credentialPrefix . '.share_username'),
+                $this->settings->getString($credentialPrefix . '.share_password')
+            );
         }
 
         if (!is_dir($path)) {

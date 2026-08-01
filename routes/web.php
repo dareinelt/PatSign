@@ -51,6 +51,7 @@ return static function (
     $router->post('/admin/smtp/test', static fn (Request $request) => $admin->sendTestMail($request));
     $router->post('/admin/ai/models', static fn (Request $request) => $admin->fetchAiModels($request));
     $router->post('/admin/ai/test', static fn (Request $request) => $admin->testAiEndpoint($request));
+    $router->post('/admin/share/test', static fn (Request $request) => $admin->testNetworkShare($request));
     $router->post('/admin/document-types', static fn (Request $request) => $admin->saveDocumentType($request));
     $router->post('/admin/users', static fn (Request $request) => $admin->saveUser($request));
     $router->post('/admin/roles', static fn (Request $request) => $admin->saveRole($request));
