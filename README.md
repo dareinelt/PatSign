@@ -15,6 +15,11 @@ App: `http://localhost:8080`
 Mailpit (Dev): `http://localhost:8025`  
 phpMyAdmin (Dev): `http://localhost:8081`
 
+## Default-Admin
+
+- Benutzername: `admin`
+- Passwort: `admin`
+
 ## Architektur
 
 - Eigene MVC-Struktur (`app/Controllers`, `app/Services`, `app/Repositories`, `resources/views`)
