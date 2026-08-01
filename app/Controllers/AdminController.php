@@ -12,6 +12,7 @@ use App\Repositories\RoleRepository;
 use App\Repositories\UserRepository;
 use App\Security\CsrfTokenManager;
 use App\Security\PasswordHasher;
+use App\Services\LocalAiClient;
 use App\Services\MailService;
 use App\Services\PromptService;
 use App\Services\SettingsService;
@@ -119,6 +120,39 @@ final class AdminController extends BaseController
         }
 
         return Response::redirect('/admin/smtp');
+    }
+
+    /** Verfügbare Modelle eines KI-Endpunkts laden (AJAX). */
+    public function fetchAiModels(Request $request): Response
+    {
+        try {
+            $models = $this->aiClientFromRequest($request)->listModels();
+
+            return $this->json(['models' => $models]);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /** Verbindung zu einem KI-Endpunkt testen (AJAX). */
+    public function testAiEndpoint(Request $request): Response
+    {
+        try {
+            return $this->json($this->aiClientFromRequest($request)->testConnection());
+        } catch (\Throwable $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+    }
+
+    private function aiClientFromRequest(Request $request): LocalAiClient
+    {
+        return new LocalAiClient([
+            'host' => trim((string) $request->input('host')),
+            'port' => (int) $request->input('port'),
+            'api_key' => (string) $request->input('api_key', ''),
+            'model' => (string) $request->input('model', ''),
+            'timeout' => min(30, max(1, (int) $request->input('timeout', 10))),
+        ]);
     }
 
     public function saveDocumentType(Request $request): Response
