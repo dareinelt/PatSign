@@ -14,7 +14,10 @@ return [
     'network_share_path' => $_ENV['NETWORK_SHARE_PATH'] ?? __DIR__ . '/../storage/network-share',
     'security' => [
         'csp' => "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'",
-        'session_secure' => filter_var($_ENV['SESSION_SECURE'] ?? true, FILTER_VALIDATE_BOOL),
+        'session_secure' => filter_var($_ENV['SESSION_SECURE'] ?? (
+            (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+        ), FILTER_VALIDATE_BOOL),
         'session_http_only' => filter_var($_ENV['SESSION_HTTP_ONLY'] ?? true, FILTER_VALIDATE_BOOL),
         'session_same_site' => $_ENV['SESSION_SAME_SITE'] ?? 'Strict',
         'session_lifetime' => (int) ($_ENV['SESSION_LIFETIME'] ?? 120),
