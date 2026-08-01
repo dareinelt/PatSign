@@ -190,6 +190,14 @@
     };
     const signedStatuses = ["signed", "sent", "archived"];
 
+    const formStatusLabels = {
+        detected: "Formular erkannt",
+        analyzed: "Formular analysiert",
+        partial: "Formular teilweise ausgefüllt",
+        complete: "Formular vollständig",
+        signed: "Formular unterschrieben"
+    };
+
     function escapeAttr(value) {
         return escapeHtml(value).replace(/"/g, "&quot;");
     }
@@ -215,10 +223,15 @@
                 const isSigned = signedStatuses.indexOf(doc.status) !== -1;
                 const isError = doc.status === "error";
                 const badgeClass = isSigned ? "badge-success" : (isError ? "badge-danger" : "badge-warning");
+                const formLabel = formStatusLabels[doc.form_status] || "";
+                const formBadge = formLabel !== ""
+                    ? ' <span class="badge ' + (doc.form_status === "signed" || doc.form_status === "complete" ? "badge-success" : "badge-info") + '">' + escapeHtml(formLabel) + "</span>"
+                    : "";
                 return '<li class="folder-document">' +
                     '<span class="folder-document-mark" aria-hidden="true">' + (isSigned ? "✓" : "○") + "</span>" +
                     '<span class="folder-document-type">' + escapeHtml(doc.document_type || "Dokument") + "</span>" +
                     '<span class="badge ' + badgeClass + '">' + escapeHtml(documentStatusLabels[doc.status] || doc.status) + "</span>" +
+                    formBadge +
                     "</li>";
             }).join("");
 

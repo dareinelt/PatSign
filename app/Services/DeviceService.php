@@ -209,6 +209,8 @@ final class DeviceService
                 'documents' => array_map(static fn (array $d): array => [
                     'id' => (int) $d['id'],
                     'document_type' => (string) ($d['document_type'] ?? 'Dokument'),
+                    'has_form' => !empty($d['is_interactive'])
+                        && in_array((string) ($d['form_status'] ?? 'none'), ['analyzed', 'partial', 'complete'], true),
                 ], $documents),
             ],
         ];

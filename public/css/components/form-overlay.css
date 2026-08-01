@@ -1,0 +1,229 @@
+/* Transparente Eingabeebene über dem PDF (interaktive Formulare).
+   Felder liegen prozentual positioniert über dem Seiten-Canvas und
+   skalieren automatisch mit Zoom und Ausrichtung. */
+
+.pdf-page-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+.form-overlay-field {
+    position: absolute;
+    line-height: normal;
+    box-sizing: border-box;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+
+.form-overlay-field.is-required::after {
+    content: "*";
+    position: absolute;
+    top: -0.35em;
+    right: -0.6em;
+    color: #c0392b;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.form-overlay-input {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: none;
+    border-bottom: 1px dashed rgba(26, 115, 232, 0.45);
+    border-radius: 2px;
+    background: rgba(26, 115, 232, 0.06);
+    font: inherit;
+    font-size: clamp(11px, 1.6vw, 15px);
+    padding: 0 4px;
+    color: #1a2733;
+    resize: none;
+}
+
+.form-overlay-input:focus {
+    outline: 2px solid rgba(26, 115, 232, 0.6);
+    outline-offset: 0;
+    background: rgba(26, 115, 232, 0.1);
+}
+
+.form-overlay-field.has-error .form-overlay-input,
+.form-overlay-field.has-error .form-overlay-choice-group {
+    outline: 2px solid rgba(192, 57, 43, 0.7);
+    background: rgba(192, 57, 43, 0.08);
+}
+
+.form-overlay-field.is-locked .form-overlay-input {
+    background: rgba(120, 120, 120, 0.08);
+    border-bottom-style: solid;
+    color: #46545f;
+}
+
+.form-overlay-field.has-handwriting .form-overlay-input {
+    display: none;
+}
+
+.form-overlay-error {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin: 2px 0 0;
+    padding: 2px 6px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 11px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+.form-overlay-error.hidden {
+    display: none;
+}
+
+/* Stift-Knopf für Handschrift */
+.form-overlay-pen {
+    position: absolute;
+    top: 50%;
+    right: -30px;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border: 1px solid rgba(26, 115, 232, 0.4);
+    border-radius: 50%;
+    background: #fff;
+    color: #1a73e8;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 4;
+}
+
+/* Checkbox */
+.form-overlay-checkbox {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    accent-color: #1a73e8;
+    cursor: pointer;
+}
+
+/* Ja/Nein, Radio, Mehrfachauswahl */
+.form-overlay-choice-group {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.form-overlay-choice {
+    flex: 1 1 auto;
+    min-width: 40px;
+    border: 1px solid rgba(26, 115, 232, 0.45);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1a2733;
+    font-size: clamp(10px, 1.4vw, 14px);
+    padding: 0 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.form-overlay-choice.is-selected {
+    background: #1a73e8;
+    border-color: #1a73e8;
+    color: #fff;
+}
+
+/* Unterschrift/Initialen im Dokument */
+.form-overlay-signature-button {
+    width: 100%;
+    height: 100%;
+    border: 1px dashed rgba(26, 115, 232, 0.55);
+    border-radius: 4px;
+    background: rgba(26, 115, 232, 0.05);
+    color: #1a73e8;
+    font-size: clamp(10px, 1.4vw, 14px);
+    cursor: pointer;
+}
+
+.form-overlay-field.is-signature.has-handwriting .form-overlay-signature-button {
+    border-style: solid;
+    background: transparent;
+    color: transparent;
+}
+
+/* Handschrift-Dialog */
+.form-overlay-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 40, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.form-overlay-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    width: min(92vw, 640px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.form-overlay-modal-title {
+    margin: 0 0 10px;
+    font-weight: 600;
+    color: #1a2733;
+}
+
+.form-overlay-handwriting-canvas {
+    width: 100%;
+    height: 220px;
+    border: 1px dashed #9db4c6;
+    border-radius: 8px;
+    background: #fbfdff;
+    touch-action: none;
+    display: block;
+}
+
+.form-overlay-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Formularfortschritt im Wizard/Kiosk */
+.form-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    font-size: 0.9rem;
+    color: #46545f;
+}
+
+.form-progress .form-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #e3ebf2;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.form-progress .form-progress-fill {
+    height: 100%;
+    width: 0;
+    background: #1a73e8;
+    border-radius: 3px;
+    transition: width 0.2s ease;
+}
+
+.form-progress.is-complete .form-progress-fill {
+    background: #1e8e3e;
+}

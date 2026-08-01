@@ -73,6 +73,8 @@ final class DashboardController extends BaseController
                 'id' => (int) $document['id'],
                 'document_type' => (string) ($document['document_type'] ?? ''),
                 'status' => (string) $document['status'],
+                'is_interactive' => (bool) ($document['is_interactive'] ?? false),
+                'form_status' => (string) ($document['form_status'] ?? 'none'),
                 'created_at' => (string) $document['created_at'],
             ];
         }

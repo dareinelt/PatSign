@@ -10,6 +10,7 @@ use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
+use App\Controllers\FormController;
 use App\Controllers\KioskController;
 use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
@@ -26,6 +27,10 @@ use App\Repositories\DeviceRepository;
 use App\Repositories\DeviceSessionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\DocumentTypeRepository;
+use App\Repositories\FormFieldRepository;
+use App\Repositories\FormFieldTypeRepository;
+use App\Repositories\FormResponseRepository;
+use App\Repositories\FormTemplateRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PatientFolderRepository;
 use App\Repositories\PromptRepository;
@@ -43,6 +48,12 @@ use App\Services\CompletionPageService;
 use App\Services\DeviceService;
 use App\Services\DocumentAnalysisService;
 use App\Services\DocumentProcessingService;
+use App\Services\Forms\AcroFormParser;
+use App\Services\Forms\FieldTypeRegistry;
+use App\Services\Forms\FilledPdfService;
+use App\Services\Forms\FormAnalysisService;
+use App\Services\Forms\FormResponseService;
+use App\Services\Forms\FormValidationService;
 use App\Services\LocalAiClient;
 use App\Services\MailService;
 use App\Services\NetworkShareService;
@@ -126,6 +137,36 @@ final class ApplicationFactory
         ));
 
         $container->singleton(NotificationRepository::class, fn (Container $c) => new NotificationRepository($c->get(\PDO::class)));
+
+        // Formularfunktion (interaktive Dokumente)
+        $container->singleton(FormTemplateRepository::class, fn (Container $c) => new FormTemplateRepository($c->get(\PDO::class)));
+        $container->singleton(FormFieldRepository::class, fn (Container $c) => new FormFieldRepository($c->get(\PDO::class)));
+        $container->singleton(FormResponseRepository::class, fn (Container $c) => new FormResponseRepository($c->get(\PDO::class)));
+        $container->singleton(FormFieldTypeRepository::class, fn (Container $c) => new FormFieldTypeRepository($c->get(\PDO::class)));
+        $container->singleton(FieldTypeRegistry::class, fn () => new FieldTypeRegistry());
+        $container->singleton(FormValidationService::class, fn (Container $c) => new FormValidationService($c->get(FieldTypeRegistry::class)));
+        $container->singleton(AcroFormParser::class, fn () => new AcroFormParser());
+        $container->singleton(FormAnalysisService::class, fn (Container $c) => new FormAnalysisService(
+            $c->get(AcroFormParser::class),
+            $c->get(LocalAiClient::class . '.vision'),
+            $c->get(FieldTypeRegistry::class),
+            $c->get(FormTemplateRepository::class),
+            $c->get(FormFieldRepository::class),
+            $c->get(DocumentRepository::class),
+            $c->get(AuditLogRepository::class),
+            $c->get(SettingsService::class)
+        ));
+        $container->singleton(FormResponseService::class, fn (Container $c) => new FormResponseService(
+            $c->get(FormTemplateRepository::class),
+            $c->get(FormFieldRepository::class),
+            $c->get(FormResponseRepository::class),
+            $c->get(FormValidationService::class),
+            $c->get(DocumentRepository::class),
+            $c->get(AuditLogRepository::class),
+            $c->get(SettingsService::class)
+        ));
+        $container->singleton(FilledPdfService::class, fn () => new FilledPdfService($basePath . '/storage/processed'));
+
         $container->singleton(ClearingCaseRepository::class, fn (Container $c) => new ClearingCaseRepository($c->get(\PDO::class)));
         $container->singleton(PatientFolderRepository::class, fn (Container $c) => new PatientFolderRepository($c->get(\PDO::class)));
         $container->singleton(ClearingErrorReasonRepository::class, fn (Container $c) => new ClearingErrorReasonRepository($c->get(\PDO::class)));
@@ -147,7 +188,9 @@ final class ApplicationFactory
             $c->get(NotificationRepository::class),
             $c->get(AuditLogRepository::class),
             $c->get(ClearingService::class),
-            $c->get(AnalysisRunRepository::class)
+            $c->get(AnalysisRunRepository::class),
+            $c->get(FormAnalysisService::class),
+            $c->get(SettingsService::class)
         ));
 
         return $container;
@@ -218,7 +261,9 @@ final class ApplicationFactory
             $container->get(AuditLogRepository::class),
             $container->get(SettingsService::class),
             $container->get(MailService::class),
-            $container->get(CsrfTokenManager::class)
+            $container->get(CsrfTokenManager::class),
+            $container->get(FormResponseService::class),
+            $container->get(FilledPdfService::class)
         );
         $kioskController = new KioskController(
             $container->get(View::class),
@@ -230,7 +275,15 @@ final class ApplicationFactory
             $container->get(SettingsService::class),
             $container->get(MailService::class),
             $container->get(CsrfTokenManager::class),
-            $container->get(Config::class)
+            $container->get(Config::class),
+            $container->get(FormResponseService::class),
+            $container->get(FilledPdfService::class)
+        );
+        $formController = new FormController(
+            $container->get(View::class),
+            $container->get(DocumentRepository::class),
+            $container->get(FormResponseService::class),
+            $container->get(DeviceService::class)
         );
         $deviceController = new DeviceController(
             $container->get(View::class),
@@ -238,7 +291,7 @@ final class ApplicationFactory
         );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController, $formController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),

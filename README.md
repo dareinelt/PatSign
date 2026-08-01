@@ -25,6 +25,19 @@ Der Patientenmodus unter `/patient` führt durch einen klar begrenzten Wizard:
 
 Der Modus ist bewusst navigationsarm gehalten, damit Patientinnen und Patienten ausschließlich die ihnen zugeordnete Mappe bearbeiten.
 
+### Interaktive Formulare (Inline-Ausfüllfunktion)
+
+Ausfüllbare Dokumente (z. B. Anamnesebögen, Fragebögen, Selbstauskünfte, Checklisten) werden automatisch erkannt und können direkt auf dem Gerät ausgefüllt werden – nahtlos im bestehenden Signaturworkflow, ohne sichtbaren Unterschied in der Bedienung:
+
+- **Erkennung**: Die bestehende KI-Analyse liefert zusätzlich `interactive` + `confidence`. Bei interaktiven Dokumenten folgt eine Formularanalyse: vorhandene PDF-Formularfelder (AcroForms) haben Vorrang, andernfalls erkennt die Vision-KI Eingabebereiche mit strukturierten Koordinaten.
+- **Darstellung**: Das Original-PDF bleibt unverändert sichtbar; darüber liegt eine transparente Eingabeebene (Overlay) mit relativen Koordinaten, die automatisch mit Zoom und Ausrichtung skaliert.
+- **Feldtypen**: Freitext, mehrzeiliger Text, Zahl, Datum, Uhrzeit, Ja/Nein, Checkbox, Radio, Dropdown, Mehrfachauswahl, Unterschrift, Initialen, Telefon, E-Mail – erweiterbar über eine Feldtyp-Registry.
+- **Eingabe**: Tastatur und/oder Apple-Pencil-Handschrift (administrativ konfigurierbar), Autosave mit Wiederaufnahme nach Verbindungsabbruch oder Browserneustart.
+- **Validierung**: ausschließlich serverseitig (Pflichtfelder, Formate, Zahlenbereiche, Regex); Pflichtfeld-Gate vor dem Fortfahren, Fortschrittsanzeige.
+- **Vorbelegung**: bekannte Patientendaten (Name, Geburtsdatum, Fallnummer, aktuelles Datum) werden automatisch eingetragen und bleiben editierbar, sofern nicht gesperrt.
+- **Abschluss**: Beim Unterschreiben werden Original-PDF, Formularinhalte, Abschlussseite und Unterschrift serverseitig zu einem finalen PDF zusammengeführt. Das Original bleibt unverändert archiviert; die ausgefüllte Version erhält eine eigene Dokument-ID. Danach sind Formularinhalte eingefroren.
+- **Administration**: eigene Sektion „Formulare“ (Analyse aktivieren, Vision-Modell, Pflichtfeldprüfung, Autosave-Intervall, Handschrift/Tastatur, Vorbelegung).
+
 ### iPad-Kioskmodus und Geräteverwaltung
 
 Tablets können unter `/kiosk` als dedizierte Signaturterminals registriert werden. Registrierte Geräte zeigen im Leerlauf einen Wartebildschirm, erhalten neue Zuweisungen per Long Polling und wechseln automatisch in den Signaturassistenten. Nach Abschluss der Unterschrift wird das Gerät wieder freigegeben.
@@ -156,6 +169,9 @@ Aktuelle Migrationsstände:
 | `001_initial.sql` | Basisschema für Benutzer, Rollen, Dokumente, Signaturen, Prompts, Einstellungen und Logs |
 | `002_ui_admin.sql` | erweiterte Dokumentstatus für Dashboard, Patientenmodus und Admin-Workflows |
 | `003_devices.sql` | Geräte, Gerätesitzungen, Zuweisungen und Gerätehistorie für den Kioskmodus |
+| `004_notifications.sql` | Benachrichtigungen über abgeschlossene Hintergrund-Analysen |
+| `005_clearing.sql` | Clearing-Workflow für unklare Dokumentzuordnungen |
+| `006_forms.sql` | interaktive Formulare: Vorlagen, Felder, Feldtypen, Eingaben, Versionen; `documents.is_interactive`/`form_status` |
 
 ## Sicherheit und Betrieb
 

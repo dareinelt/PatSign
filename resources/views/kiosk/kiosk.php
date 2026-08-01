@@ -84,6 +84,10 @@ ob_start();
                 </div>
                 <div class="doc-viewer-frame" id="doc-frame" role="document" aria-label="Dokumentanzeige mit Blättern und Zoom"></div>
             </div>
+            <div class="form-progress hidden" id="form-progress" aria-live="polite">
+                <span id="form-progress-label"></span>
+                <span class="form-progress-bar"><span class="form-progress-fill" id="form-progress-fill"></span></span>
+            </div>
             <p class="text-muted text-sm text-center mt-2 mb-0">
                 Zum Vergrößern zwei Finger auseinanderziehen, zum Blättern wischen oder scrollen.
             </p>
@@ -165,5 +169,5 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $title = 'Signaturgerät – ' . ($clinicName ?? 'PatSign');
-$scripts = ['/js/pdf-viewer.js', '/js/kiosk.js'];
+$scripts = ['/js/pdf-viewer.js', '/js/form-overlay.js', '/js/kiosk.js'];
 include __DIR__ . '/../partials/layout.php';
