@@ -60,4 +60,7 @@
     <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 20s-7.5-4.6-9.3-9A5.2 5.2 0 0 1 12 7.3 5.2 5.2 0 0 1 21.3 11c-1.8 4.4-9.3 9-9.3 9z"/>
     </symbol>
+    <symbol id="icon-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path d="M10.3 19.5a2 2 0 0 0 3.4 0"/>
+    </symbol>
 </svg>

@@ -50,6 +50,21 @@ ob_start();
     <header class="topbar">
         <span class="topbar-area-label <?= $activeNav === 'admin' ? 'is-admin' : '' ?>"><?= e($areaLabel) ?></span>
         <div class="topbar-spacer"></div>
+        <div class="notification-center" id="notification-center" data-csrf="<?= e($csrf ?? '') ?>">
+            <button type="button" class="notification-bell" id="notification-bell" aria-haspopup="true" aria-expanded="false" aria-label="Benachrichtigungen">
+                <svg class="icon" aria-hidden="true"><use href="#icon-bell"/></svg>
+                <span class="notification-badge" id="notification-badge" hidden></span>
+            </button>
+            <div class="notification-panel" id="notification-panel" hidden>
+                <div class="notification-panel-header">
+                    <strong>Benachrichtigungen</strong>
+                    <button type="button" class="btn btn-ghost btn-sm" id="notification-mark-all">Alle gelesen</button>
+                </div>
+                <ul class="notification-list" id="notification-list">
+                    <li class="notification-empty">Keine Benachrichtigungen</li>
+                </ul>
+            </div>
+        </div>
         <div class="topbar-user">
             <span><?= e($user['username'] ?? '') ?> · <?= e($user['role'] ?? '') ?></span>
             <span class="avatar" aria-hidden="true"><?= e(mb_substr((string) ($user['username'] ?? '?'), 0, 1)) ?></span>
@@ -61,4 +76,5 @@ ob_start();
 </div>
 <?php
 $content = ob_get_clean();
+$scripts = array_merge($scripts ?? [], ['/js/notifications.js']);
 include __DIR__ . '/layout.php';

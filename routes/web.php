@@ -8,6 +8,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
 use App\Controllers\KioskController;
+use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
 use App\Core\Request;
 use App\Core\Router;
@@ -20,7 +21,8 @@ return static function (
     DashboardController $dashboard,
     PatientController $patient,
     KioskController $kiosk,
-    DeviceController $devices
+    DeviceController $devices,
+    NotificationController $notifications
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
@@ -38,6 +40,10 @@ return static function (
     $router->get('/documents/watch', static fn () => $documents->scanWatchFolder());
     $router->post('/documents/analyze', static fn (Request $request) => $documents->analyze($request));
     $router->post('/documents/sign', static fn (Request $request) => $documents->sign($request));
+
+    // Benachrichtigungen (medizinisches Personal)
+    $router->get('/notifications', static fn () => $notifications->index());
+    $router->post('/notifications/read', static fn (Request $request) => $notifications->markRead($request));
 
     // Patientenmodus
     $router->post('/patient/start', static fn (Request $request) => $patient->start($request));

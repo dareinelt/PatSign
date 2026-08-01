@@ -13,6 +13,7 @@ use App\Security\CsrfTokenManager;
 use App\Services\DocumentAnalysisService;
 use App\Services\PdfImportService;
 use App\Services\SignatureService;
+use App\Support\BackgroundProcess;
 
 final class DocumentController extends BaseController
 {
@@ -24,7 +25,8 @@ final class DocumentController extends BaseController
         private readonly DocumentRepository $documents,
         private readonly AuditLogRepository $auditLogs,
         private readonly Config $config,
-        private readonly CsrfTokenManager $csrf
+        private readonly CsrfTokenManager $csrf,
+        private readonly string $basePath
     ) {
         parent::__construct($view);
     }
@@ -61,51 +63,17 @@ final class DocumentController extends BaseController
         ]);
         $this->auditLog('document_imported', ['file' => basename($path)], $id);
 
-        $analysisResult = null;
-        $warning = null;
-        try {
-            $this->documents->updateStatus($id, 'analyzing');
-            $start = microtime(true);
-            $analysisResult = $this->analysis->analyze($path);
-            $durationMs = (int) round((microtime(true) - $start) * 1000);
+        // KI-Analyse asynchron im Hintergrund starten, damit der Upload
+        // die Bedienung nicht blockiert. Ergebnis erscheint als Benachrichtigung.
+        $this->documents->updateStatus($id, 'analyzing');
+        BackgroundProcess::runPhpScript($this->basePath . '/bin/process-document.php', [(string) $id]);
 
-            $caseNumber = isset($analysisResult['case_number']) && is_string($analysisResult['case_number']) && $analysisResult['case_number'] !== ''
-                ? $analysisResult['case_number']
-                : null;
-            $firstName = isset($analysisResult['first_name']) && is_string($analysisResult['first_name']) ? $analysisResult['first_name'] : null;
-            $lastName = isset($analysisResult['last_name']) && is_string($analysisResult['last_name']) ? $analysisResult['last_name'] : null;
-            $birthDate = isset($analysisResult['birth_date']) && is_string($analysisResult['birth_date']) && $analysisResult['birth_date'] !== ''
-                ? $analysisResult['birth_date']
-                : null;
-
-            $this->documents->updateAnalysis($id, [
-                'document_type' => isset($analysisResult['document_type']) && is_string($analysisResult['document_type']) && $analysisResult['document_type'] !== ''
-                    ? $analysisResult['document_type']
-                    : 'Unbekannt',
-                'case_number' => $caseNumber,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'birth_date' => $birthDate,
-                'analysis_json' => json_encode($analysisResult, JSON_UNESCAPED_UNICODE),
-                'analysis_model' => $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b',
-                'analysis_duration_ms' => $durationMs,
-                'patient_key' => hash('sha256', implode('|', [(string) $lastName, (string) $firstName, (string) $birthDate, (string) $caseNumber])),
-                'status' => 'analyzed',
-            ]);
-            $this->auditLog('document_analyzed', ['file' => basename($path)], $id);
-        } catch (\Throwable $e) {
-            $this->documents->updateStatus($id, 'error');
-            $warning = 'KI-Analyse fehlgeschlagen: ' . $e->getMessage();
-            $this->auditLog('document_analysis_failed', ['file' => basename($path), 'error' => $e->getMessage()], $id);
-        }
-
-        return $this->json(array_filter([
-            'message' => 'Import erfolgreich',
+        return $this->json([
+            'message' => 'Import erfolgreich. Die Analyse läuft im Hintergrund – das Ergebnis erscheint unter Benachrichtigungen.',
             'path' => $path,
             'document_id' => $documentUuid,
-            'analysis' => $analysisResult,
-            'warning' => $warning,
-        ], static fn ($value) => $value !== null));
+            'status' => 'analyzing',
+        ]);
     }
 
     /** @param array<string,mixed> $context */
