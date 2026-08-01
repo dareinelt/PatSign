@@ -31,7 +31,7 @@ final class AuthController extends BaseController
             return $this->render('auth.login', ['csrf' => $this->csrf->token(), 'error' => 'Ungültige Anmeldedaten'], 401);
         }
 
-        return Response::redirect('/documents');
+        return Response::redirect('/dashboard');
     }
 
     public function logout(): Response

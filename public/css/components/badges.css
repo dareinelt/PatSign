@@ -1,0 +1,58 @@
+/* Status-Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+}
+
+.badge-neutral { background: var(--color-surface-alt); color: var(--color-text-muted); }
+.badge-info { background: var(--color-info-soft); color: var(--color-info); }
+.badge-success { background: var(--color-success-soft); color: var(--color-success); }
+.badge-warning { background: var(--color-warning-soft); color: var(--color-warning); }
+.badge-danger { background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Ampel-Statuspunkte für Systemchecks */
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-full);
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.status-dot.is-ok { background: var(--color-success); }
+.status-dot.is-warn { background: var(--color-warning); }
+.status-dot.is-error { background: var(--color-danger); }
+
+.status-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+    min-height: var(--touch-target);
+}
+
+.status-list li:last-child {
+    border-bottom: none;
+}
+
+.status-list .status-detail {
+    margin-left: auto;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    text-align: right;
+}

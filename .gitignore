@@ -12,3 +12,4 @@
 /storage/signatures/*
 /storage/network-share/*
 !.gitkeep
+.phpunit.result.cache
