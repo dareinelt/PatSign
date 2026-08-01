@@ -62,8 +62,8 @@
             return;
         }
 
-        if (frame) {
-            frame.src = "/patient/document?id=" + encodeURIComponent(doc.id) + "#toolbar=1&view=FitH";
+        if (frame && window.PatSignPdfViewer) {
+            window.PatSignPdfViewer.render(frame, "/patient/document?id=" + encodeURIComponent(doc.id));
         }
         if (docTitle) {
             docTitle.textContent = doc.document_type || "Dokument";
@@ -96,8 +96,8 @@
 
         const open = event.target.closest("[data-open-documents]");
         if (open) {
-            loadDocument(0);
             showStep(currentStep + 1);
+            loadDocument(0);
         }
     });
 

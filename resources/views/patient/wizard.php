@@ -83,7 +83,7 @@ ob_start();
                     <span class="doc-viewer-title" id="doc-viewer-title">Dokument</span>
                     <span class="text-muted text-sm" id="doc-counter"></span>
                 </div>
-                <iframe class="doc-viewer-frame" id="doc-frame" title="Dokumentanzeige mit Blättern und Zoom"></iframe>
+                <div class="doc-viewer-frame" id="doc-frame" role="document" aria-label="Dokumentanzeige mit Blättern und Zoom"></div>
             </div>
             <p class="text-muted text-sm text-center mt-2 mb-0">
                 Zum Vergrößern zwei Finger auseinanderziehen, zum Blättern wischen oder scrollen.
@@ -201,5 +201,5 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $title = 'Ihre Dokumente – ' . ($clinicName ?? 'PatSign');
-$scripts = ['/js/patient.js'];
+$scripts = ['/js/pdf-viewer.js', '/js/patient.js'];
 include __DIR__ . '/../partials/layout.php';

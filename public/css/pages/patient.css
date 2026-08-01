@@ -186,7 +186,35 @@
     border: none;
     width: 100%;
     min-height: 55vh;
+    max-height: 70vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y pinch-zoom;
+    background: var(--color-surface-alt);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.doc-viewer-frame .pdf-page {
+    display: block;
+    max-width: 100%;
+    background: #fff;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+    flex: none;
+}
+
+.doc-viewer-frame .pdf-viewer-message {
+    margin: auto;
+    color: var(--color-text-muted, #6b7280);
+    text-align: center;
+    padding: var(--space-4);
+}
+
+.doc-viewer-frame .pdf-viewer-message.is-error {
+    color: var(--color-danger, #b91c1c);
 }
 
 /* Unterschriftsfeld */
