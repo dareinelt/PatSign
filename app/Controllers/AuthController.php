@@ -31,6 +31,10 @@ final class AuthController extends BaseController
             return $this->render('auth.login', ['csrf' => $this->csrf->token(), 'error' => 'Ungültige Anmeldedaten'], 401);
         }
 
+        if (filter_var($request->input('redirect_to_kiosk', false), FILTER_VALIDATE_BOOL)) {
+            return Response::redirect('/kiosk');
+        }
+
         return Response::redirect('/dashboard');
     }
 

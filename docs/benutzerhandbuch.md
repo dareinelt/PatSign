@@ -16,6 +16,7 @@
 
 ## iPad einrichten (Kioskmodus)
 
-1. Anwendung auf dem iPad öffnen – Tablets werden automatisch erkannt und zur Geräteregistrierung geleitet.
-2. Eindeutigen Gerätenamen vergeben (z. B. „Anmeldung 1“, „OP 1“).
-3. Danach arbeitet das Gerät ausschließlich im Kioskmodus: keine Patientensuche, keine Navigation – nur zugewiesene Mappen.
+1. Anwendung auf dem iPad öffnen und mit einem Benutzerkonto anmelden.
+2. Nach der Anmeldung werden unbekannte Tablets automatisch in den Kioskmodus zur Geräteregistrierung geleitet.
+3. Eindeutigen Gerätenamen vergeben (z. B. „Anmeldung 1“, „OP 1“).
+4. Danach arbeitet das Gerät ausschließlich im Kioskmodus: keine Patientensuche, keine Navigation – nur zugewiesene Mappen.

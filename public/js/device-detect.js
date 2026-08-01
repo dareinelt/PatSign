@@ -15,7 +15,12 @@
     var isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
     var isTablet = isIpad || isAndroidTablet || (touchPoints > 1 && minDim >= 600);
 
-    if (registered || isTablet) {
+    var loginRedirectField = document.getElementById("login-redirect-to-kiosk");
+    if (loginRedirectField) {
+        loginRedirectField.value = !registered && isTablet ? "1" : "0";
+    }
+
+    if (registered) {
         window.location.replace("/kiosk");
     }
 })();
