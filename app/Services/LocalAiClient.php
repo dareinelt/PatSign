@@ -104,7 +104,10 @@ final class LocalAiClient
         curl_setopt_array($ch, [
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => max(1, (int) ($this->config['timeout'] ?? 30)),
+            // Verbindungsaufbau schnell abbrechen, aber der Inferenz genug Zeit lassen:
+            // lokale Vision-Modelle brauchen bei mehrseitigen Dokumenten mehrere Minuten.
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => max(1, (int) ($this->config['timeout'] ?? 300)),
         ]);
 
         if ($method === 'POST') {

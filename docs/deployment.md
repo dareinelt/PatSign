@@ -86,12 +86,12 @@ Alle KI-Aufrufe erfolgen ausschließlich an lokal konfigurierbare OpenAI-kompati
 | `VISION_PORT` | `11434` | Port des Vision-Dienstes. |
 | `VISION_API_KEY` | `local-key` | API-Schlüssel (bei lokalem Dienst frei wählbar). |
 | `VISION_MODEL` | `vision-local` | Modellbezeichnung. |
-| `VISION_TIMEOUT` | `60` | Timeout in Sekunden. |
+| `VISION_TIMEOUT` | `600` | Timeout in Sekunden (lokale Vision-Modelle brauchen bei mehrseitigen Dokumenten mehrere Minuten). |
 | `ANALYSIS_HOST` | `http://analysis-api` | URL des Analyse-KI-Dienstes. |
 | `ANALYSIS_PORT` | `11435` | Port des Analyse-Dienstes. |
 | `ANALYSIS_API_KEY` | `local-key` | API-Schlüssel. |
 | `ANALYSIS_MODEL` | `gemma-4-e4b` | Modellbezeichnung. |
-| `ANALYSIS_TIMEOUT` | `45` | Timeout in Sekunden. |
+| `ANALYSIS_TIMEOUT` | `300` | Timeout in Sekunden. |
 
 ---
 
