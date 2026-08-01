@@ -11,7 +11,7 @@ ob_start();
         <div class="card-header">
             <h2>Dokument importieren</h2>
         </div>
-        <form method="post" action="/documents/upload" enctype="multipart/form-data">
+        <form id="document-upload-form" method="post" action="/documents/upload" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="<?= e($csrf ?? '') ?>">
             <div class="form-group">
                 <label for="document-upload">PDF auswählen</label>
@@ -38,10 +38,23 @@ ob_start();
         </a>
     </section>
 </div>
+
+<dialog class="dialog" id="upload-result-dialog" aria-labelledby="upload-result-title">
+    <div class="dialog-header">
+        <h2 id="upload-result-title">Import</h2>
+    </div>
+    <div class="dialog-body">
+        <p id="upload-result-message"></p>
+    </div>
+    <div class="dialog-footer">
+        <button type="button" class="btn btn-primary" id="upload-result-ok">OK</button>
+    </div>
+</dialog>
 <?php
 $innerContent = ob_get_clean();
 $title = 'Dokumente – PatSign';
 $activeNav = 'documents';
 $areaLabel = 'Personalbereich';
+$scripts = ['/js/documents.js'];
 $user = $_SESSION['auth_user'] ?? [];
 include __DIR__ . '/../partials/staff_layout.php';
