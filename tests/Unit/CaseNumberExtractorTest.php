@@ -18,6 +18,27 @@ final class CaseNumberExtractorTest extends TestCase
         self::assertGreaterThanOrEqual(0.9, $result['confidence']);
     }
 
+    public function testExtractAcceptsPreviousTwoYears(): void
+    {
+        $service = new CaseNumberExtractor();
+
+        $result = $service->extract('Fallnummer: 92501234', 2026);
+        self::assertSame('92501234', $result['case_number']);
+        self::assertGreaterThanOrEqual(0.8, $result['confidence']);
+
+        $result = $service->extract('Fallnummer: 92401234', 2026);
+        self::assertSame('92401234', $result['case_number']);
+        self::assertGreaterThanOrEqual(0.7, $result['confidence']);
+    }
+
+    public function testExtractPrefersMoreRecentYear(): void
+    {
+        $service = new CaseNumberExtractor();
+        $result = $service->extract('Werte: 92401234 und 92501234', 2026);
+
+        self::assertSame('92501234', $result['case_number']);
+    }
+
     public function testExtractReturnsNullWhenNoCandidateExists(): void
     {
         $service = new CaseNumberExtractor();
