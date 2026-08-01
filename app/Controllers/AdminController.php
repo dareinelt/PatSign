@@ -63,6 +63,12 @@ final class AdminController extends BaseController
             'flash' => $this->pullFlash(),
         ];
 
+        if ($section === 'ai') {
+            $data['activePrompts'] = [
+                'vision' => $this->prompts->getActivePrompt('vision'),
+                'analysis' => $this->prompts->getActivePrompt('analysis'),
+            ];
+        }
         if ($section === 'document-types') {
             $data['documentTypes'] = $this->documentTypes->all();
         }
