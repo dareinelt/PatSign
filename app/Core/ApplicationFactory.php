@@ -33,6 +33,7 @@ use App\Security\DeviceTokenManager;
 use App\Security\PasswordHasher;
 use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
+use App\Services\CompletionPageService;
 use App\Services\DeviceService;
 use App\Services\DocumentAnalysisService;
 use App\Services\DocumentProcessingService;
@@ -93,6 +94,10 @@ final class ApplicationFactory
         $container->singleton(CaseNumberExtractor::class, fn () => new CaseNumberExtractor());
         $container->singleton(FilenameNormalizer::class, fn () => new FilenameNormalizer());
         $container->singleton(SignatureService::class, fn (Container $c) => new SignatureService($c->get(FilenameNormalizer::class)));
+        $container->singleton(CompletionPageService::class, fn (Container $c) => new CompletionPageService(
+            $c->get(SettingsService::class),
+            $basePath . '/storage/processed'
+        ));
         $container->singleton(LocalAiClient::class . '.vision', fn (Container $c) => new LocalAiClient(self::aiConfig($c->get(SettingsService::class), 'vision')));
         $container->singleton(LocalAiClient::class . '.analysis', fn (Container $c) => new LocalAiClient(self::aiConfig($c->get(SettingsService::class), 'analysis')));
         $container->singleton(DocumentAnalysisService::class, fn (Container $c) => new DocumentAnalysisService(
@@ -178,6 +183,7 @@ final class ApplicationFactory
             $container->get(DocumentRepository::class),
             $container->get(SignatureRepository::class),
             $container->get(SignatureService::class),
+            $container->get(CompletionPageService::class),
             $container->get(AuditLogRepository::class),
             $container->get(SettingsService::class),
             $container->get(MailService::class),
@@ -189,6 +195,7 @@ final class ApplicationFactory
             $container->get(DocumentRepository::class),
             $container->get(SignatureRepository::class),
             $container->get(SignatureService::class),
+            $container->get(CompletionPageService::class),
             $container->get(SettingsService::class),
             $container->get(MailService::class),
             $container->get(CsrfTokenManager::class),

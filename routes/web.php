@@ -70,7 +70,7 @@ return static function (
 
     // Administration
     $router->get('/admin', static fn () => \App\Core\Response::redirect('/admin/general'));
-    foreach (['general', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'users', 'roles', 'devices', 'system'] as $section) {
+    foreach (['general', 'completion-page', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'users', 'roles', 'devices', 'system'] as $section) {
         $router->get('/admin/' . $section, static fn () => $admin->section($section));
     }
     $router->post('/admin/devices', static fn (Request $request) => $admin->deviceAction($request));

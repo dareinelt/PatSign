@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../partials/helpers.php';
-$sectionSubtitle = 'Klinikname, Logo und Standardfarben';
+$sectionSubtitle = 'Klinikname, Ort, Logo und Standardfarben';
 ob_start();
 ?>
 <div class="card">
@@ -10,6 +10,11 @@ ob_start();
         <div class="form-group">
             <label for="clinic-name">Klinikname</label>
             <input id="clinic-name" name="clinic_name" value="<?= e($settings->getString('general.clinic_name', 'PatSign')) ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="clinic-location">Ort</label>
+            <input id="clinic-location" name="clinic_location" value="<?= e($settings->getString('general.clinic_location', '')) ?>">
+            <span class="form-hint">Ort des Klinikums – erscheint u. a. auf der Abschlussseite unterschriebener Dokumente.</span>
         </div>
         <div class="form-group">
             <label for="logo-text">Logo-Kürzel</label>
