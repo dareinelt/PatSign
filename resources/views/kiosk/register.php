@@ -6,7 +6,7 @@ ob_start();
     <header class="patient-header">
         <span class="clinic-name"><?= e($clinicName) ?></span>
     </header>
-    <main class="kiosk-main is-active" aria-label="Geräteregistrierung">
+    <main class="kiosk-main kiosk-state is-active" aria-label="Geräteregistrierung">
         <div class="kiosk-card">
             <div class="alert alert-error hidden" id="register-unsupported" role="alert">
                 Dieses Gerät wurde nicht als unterstütztes Tablet erkannt (z.&nbsp;B. iPad mit Safari oder Chrome).
