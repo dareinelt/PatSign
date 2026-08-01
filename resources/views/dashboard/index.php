@@ -18,7 +18,20 @@ $eventLabels = [
     'mail_error' => 'Fehler beim Mailversand',
     'document_imported' => 'Dokument importiert',
     'document_analyzed' => 'Analyse abgeschlossen',
+    'device_folder_sent' => 'Patientenmappe an Gerät gesendet',
+    'device_session_started' => 'Gerätesitzung gestartet',
+    'device_session_ended' => 'Gerätesitzung beendet',
+    'device_signature_completed' => 'Unterschrift am Gerät abgeschlossen',
 ];
+
+$deviceAvailabilityMeta = [
+    'free' => ['label' => 'Frei', 'badge' => 'badge-success'],
+    'busy' => ['label' => 'Belegt', 'badge' => 'badge-warning'],
+    'offline' => ['label' => 'Offline', 'badge' => 'badge-neutral'],
+    'locked' => ['label' => 'Gesperrt', 'badge' => 'badge-danger'],
+    'retired' => ['label' => 'Außer Betrieb', 'badge' => 'badge-neutral'],
+];
+$devices = $devices ?? [];
 
 ob_start();
 ?>
@@ -102,6 +115,12 @@ ob_start();
                                     Patientenmodus
                                 </button>
                             </form>
+                            <button type="button" class="btn btn-secondary btn-sm" data-send-to-device
+                                    data-case-number="<?= e($patient['case_number']) ?>"
+                                    data-patient-name="<?= e(trim(($patient['last_name'] ?? '') . ', ' . ($patient['first_name'] ?? ''), ', ')) ?>">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-document"/></svg>
+                                An Gerät senden
+                            </button>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -124,6 +143,40 @@ ob_start();
                     </li>
                 <?php endforeach; ?>
             </ul>
+        </section>
+
+        <section class="card col-span-12" aria-label="Signaturgeräte">
+            <div class="card-header">
+                <h2>Signaturgeräte (iPads)</h2>
+                <span class="badge badge-info" id="device-count"><?= count($devices) ?> Gerät(e)</span>
+            </div>
+            <?php if (empty($devices)): ?>
+                <p class="table-empty mb-0">Noch keine Geräte registriert. Rufen Sie die Anwendung auf einem iPad auf, um es zu registrieren.</p>
+            <?php else: ?>
+                <div class="table-wrapper">
+                    <table class="table" id="device-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Gerätename</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Zugewiesener Patient</th>
+                                <th scope="col">Letzte Aktivität</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($devices as $device): ?>
+                                <?php $meta = $deviceAvailabilityMeta[$device['availability']] ?? ['label' => $device['availability'], 'badge' => 'badge-neutral']; ?>
+                                <tr>
+                                    <td><?= e($device['name']) ?></td>
+                                    <td><span class="badge <?= e($meta['badge']) ?>"><?= e($meta['label']) ?></span></td>
+                                    <td><?= e($device['assigned_patient'] ?? ($device['assigned_case_number'] ? 'Fall ' . $device['assigned_case_number'] : '–')) ?></td>
+                                    <td><?= e($device['last_seen_at'] ?? '–') ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </section>
 
         <section class="card col-span-12" aria-label="Letzte Aktivitäten">
@@ -168,6 +221,31 @@ ob_start();
         </div>
     </form>
 </dialog>
+<dialog class="dialog" id="send-to-device-dialog" aria-labelledby="send-to-device-title">
+    <form id="send-to-device-form">
+        <div class="dialog-header">
+            <h2 id="send-to-device-title">Patientenmappe an Gerät senden</h2>
+            <button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Dialog schließen">✕</button>
+        </div>
+        <div class="dialog-body">
+            <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="case_number" id="send-device-case-number" value="">
+            <p class="mb-2" id="send-device-patient-info"></p>
+            <div class="form-group">
+                <label for="send-device-select">Zielgerät</label>
+                <select id="send-device-select" name="device_id" required>
+                    <option value="">Geräte werden geladen …</option>
+                </select>
+                <span class="form-hint">Nur freie Geräte sind auswählbar.</span>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button>
+            <button type="submit" class="btn btn-primary" id="send-device-submit">Senden</button>
+        </div>
+    </form>
+</dialog>
+
 <?php
 $innerContent = ob_get_clean();
 $title = 'Dashboard – PatSign';

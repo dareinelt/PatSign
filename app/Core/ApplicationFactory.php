@@ -7,12 +7,18 @@ namespace App\Core;
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
+use App\Controllers\KioskController;
 use App\Controllers\PatientController;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RouteGuardMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\DeviceAssignmentRepository;
+use App\Repositories\DeviceHistoryRepository;
+use App\Repositories\DeviceRepository;
+use App\Repositories\DeviceSessionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\DocumentTypeRepository;
 use App\Repositories\PromptRepository;
@@ -21,9 +27,11 @@ use App\Repositories\SignatureRepository;
 use App\Repositories\SystemSettingRepository;
 use App\Repositories\UserRepository;
 use App\Security\CsrfTokenManager;
+use App\Security\DeviceTokenManager;
 use App\Security\PasswordHasher;
 use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
+use App\Services\DeviceService;
 use App\Services\DocumentAnalysisService;
 use App\Services\LocalAiClient;
 use App\Services\MailService;
@@ -55,6 +63,20 @@ final class ApplicationFactory
         $container->singleton(SignatureRepository::class, fn (Container $c) => new SignatureRepository($c->get(\PDO::class)));
         $container->singleton(AuditLogRepository::class, fn (Container $c) => new AuditLogRepository($c->get(\PDO::class)));
         $container->singleton(SystemSettingRepository::class, fn (Container $c) => new SystemSettingRepository($c->get(\PDO::class)));
+        $container->singleton(DeviceRepository::class, fn (Container $c) => new DeviceRepository($c->get(\PDO::class)));
+        $container->singleton(DeviceAssignmentRepository::class, fn (Container $c) => new DeviceAssignmentRepository($c->get(\PDO::class)));
+        $container->singleton(DeviceSessionRepository::class, fn (Container $c) => new DeviceSessionRepository($c->get(\PDO::class)));
+        $container->singleton(DeviceHistoryRepository::class, fn (Container $c) => new DeviceHistoryRepository($c->get(\PDO::class)));
+        $container->singleton(DeviceTokenManager::class, fn () => new DeviceTokenManager());
+        $container->singleton(DeviceService::class, fn (Container $c) => new DeviceService(
+            $c->get(DeviceRepository::class),
+            $c->get(DeviceAssignmentRepository::class),
+            $c->get(DeviceSessionRepository::class),
+            $c->get(DeviceHistoryRepository::class),
+            $c->get(DocumentRepository::class),
+            $c->get(AuditLogRepository::class),
+            $c->get(DeviceTokenManager::class)
+        ));
         $container->singleton(SettingsService::class, fn (Container $c) => new SettingsService($c->get(SystemSettingRepository::class), $c->get(Config::class)));
         $container->singleton(SystemStatusService::class, fn (Container $c) => new SystemStatusService($c->get(\PDO::class), $c->get(SettingsService::class), $c->get(NetworkShareService::class)));
         $container->singleton(MailService::class, fn (Container $c) => new MailService($c->get(SettingsService::class)));
@@ -108,6 +130,7 @@ final class ApplicationFactory
             $container->get(PasswordHasher::class),
             $container->get(MailService::class),
             $container->get(NetworkShareService::class),
+            $container->get(DeviceService::class),
             $container->get(CsrfTokenManager::class)
         );
         $dashboardController = new DashboardController(
@@ -116,6 +139,7 @@ final class ApplicationFactory
             $container->get(AuditLogRepository::class),
             $container->get(SystemStatusService::class),
             $container->get(SettingsService::class),
+            $container->get(DeviceService::class),
             $container->get(CsrfTokenManager::class)
         );
         $patientController = new PatientController(
@@ -128,9 +152,24 @@ final class ApplicationFactory
             $container->get(MailService::class),
             $container->get(CsrfTokenManager::class)
         );
+        $kioskController = new KioskController(
+            $container->get(View::class),
+            $container->get(DeviceService::class),
+            $container->get(DocumentRepository::class),
+            $container->get(SignatureRepository::class),
+            $container->get(SignatureService::class),
+            $container->get(SettingsService::class),
+            $container->get(MailService::class),
+            $container->get(CsrfTokenManager::class),
+            $container->get(Config::class)
+        );
+        $deviceController = new DeviceController(
+            $container->get(View::class),
+            $container->get(DeviceService::class)
+        );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),

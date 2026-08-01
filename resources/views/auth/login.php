@@ -25,4 +25,4 @@
         </form>
     </div>
 </div>
-<?php $content = ob_get_clean(); $title = 'Anmeldung – PatSign'; include __DIR__ . '/../partials/layout.php'; ?>
+<?php $content = ob_get_clean(); $title = 'Anmeldung – PatSign'; $scripts = ['/js/device-detect.js']; include __DIR__ . '/../partials/layout.php'; ?>

@@ -17,6 +17,7 @@ use App\Services\MailService;
 use App\Services\NetworkShareService;
 use App\Services\PromptService;
 use App\Services\SettingsService;
+use App\Services\DeviceService;
 
 final class AdminController extends BaseController
 {
@@ -31,6 +32,7 @@ final class AdminController extends BaseController
         'logging' => 'Logging',
         'users' => 'Benutzer',
         'roles' => 'Rollen',
+        'devices' => 'Geräteverwaltung',
         'system' => 'Systemeinstellungen',
     ];
 
@@ -44,6 +46,7 @@ final class AdminController extends BaseController
         private readonly PasswordHasher $hasher,
         private readonly MailService $mail,
         private readonly NetworkShareService $networkShare,
+        private readonly DeviceService $devices,
         private readonly CsrfTokenManager $csrf
     ) {
         parent::__construct($view);
@@ -80,6 +83,12 @@ final class AdminController extends BaseController
         }
         if ($section === 'roles') {
             $data['roles'] = $this->roles->all();
+        }
+        if ($section === 'devices') {
+            $data['devices'] = $this->devices->overview();
+            $data['activeSessions'] = $this->devices->activeSessions();
+            $data['assignmentLog'] = $this->devices->assignmentLog();
+            $data['deviceHistory'] = $this->devices->historyLog();
         }
 
         return $this->render('admin.' . str_replace('-', '_', $section), $data);
@@ -266,6 +275,40 @@ final class AdminController extends BaseController
         }
 
         return Response::redirect('/admin/roles');
+    }
+
+    /** Verwaltungsaktionen für registrierte Signaturgeräte. */
+    public function deviceAction(Request $request): Response
+    {
+        $action = (string) $request->input('action', '');
+        $id = (int) $request->input('id');
+        $userId = isset($_SESSION['auth_user']['id']) ? (int) $_SESSION['auth_user']['id'] : null;
+
+        if ($id <= 0) {
+            $this->flash('Ungültiges Gerät.', 'error');
+
+            return Response::redirect('/admin/devices');
+        }
+
+        try {
+            match ($action) {
+                'rename' => $this->devices->rename($id, (string) $request->input('name', ''), $userId),
+                'lock' => $this->devices->setStatus($id, 'locked', $userId),
+                'unlock', 'activate' => $this->devices->setStatus($id, 'active', $userId),
+                'retire' => $this->devices->setStatus($id, 'retired', $userId),
+                'reset' => $this->devices->reset($id, $userId),
+                'delete' => $this->devices->delete($id, $userId),
+                'end_session' => $this->devices->endSession($id, $userId),
+                default => throw new \InvalidArgumentException('Unbekannte Aktion.'),
+            };
+            $this->flash('Aktion ausgeführt.');
+        } catch (\InvalidArgumentException $e) {
+            $this->flash($e->getMessage(), 'error');
+        } catch (\Throwable) {
+            $this->flash('Aktion fehlgeschlagen.', 'error');
+        }
+
+        return Response::redirect('/admin/devices');
     }
 
     public function updatePrompt(Request $request): Response
