@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: patsign-app
+    env_file:
+      - .env
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    volumes:
+      - ./:/var/www/html
+      - patsign_logs:/var/www/html/storage/logs
+      - patsign_storage:/var/www/html/storage
+      - patsign_uploads:/var/www/html/storage/uploads
+      - patsign_share:/var/www/html/storage/network-share
+
+  mysql:
+    image: mysql:8.0
+    container_name: patsign-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - patsign_db:/var/lib/mysql
+
+volumes:
+  patsign_db:
+  patsign_logs:
+  patsign_storage:
+  patsign_uploads:
+  patsign_share:

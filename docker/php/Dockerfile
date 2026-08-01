@@ -1,0 +1,20 @@
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json ./
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
+
+FROM php:8.4-apache AS app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libzip-dev libicu-dev libonig-dev libxml2-dev ghostscript imagemagick libmagickwand-dev \
+    && docker-php-ext-install pdo pdo_mysql opcache \
+    && pecl install imagick && docker-php-ext-enable imagick \
+    && a2enmod rewrite headers ssl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html
+COPY --from=vendor /app/vendor /var/www/html/vendor
+COPY . /var/www/html
+COPY docker/php/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/logs
+EXPOSE 80
+CMD ["apache2-foreground"]
