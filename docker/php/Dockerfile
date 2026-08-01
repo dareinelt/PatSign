@@ -16,6 +16,9 @@ WORKDIR /var/www/html
 COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY . /var/www/html
 COPY docker/php/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/logs
+RUN mkdir -p /var/www/html/storage/tmp /var/www/html/storage/uploads /var/www/html/storage/imports \
+    /var/www/html/storage/processed /var/www/html/storage/signatures /var/www/html/storage/network-share \
+    /var/www/html/storage/logs \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/logs
 EXPOSE 80
 CMD ["apache2-foreground"]
