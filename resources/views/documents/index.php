@@ -2,7 +2,7 @@
 <div class="card">
     <h1>Dokumentenimport</h1>
     <form method="post" action="/documents/upload" enctype="multipart/form-data">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string) ($_SESSION['_csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string) ($csrf ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         <label>PDF auswählen</label>
         <input type="file" name="document" accept="application/pdf" required>
         <button type="submit">Importieren</button>

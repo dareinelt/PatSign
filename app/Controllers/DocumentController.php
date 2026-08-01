@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Config;
 use App\Core\Request;
 use App\Core\Response;
+use App\Security\CsrfTokenManager;
 use App\Services\DocumentAnalysisService;
 use App\Services\PdfImportService;
 use App\Services\SignatureService;
@@ -18,14 +19,15 @@ final class DocumentController extends BaseController
         private readonly PdfImportService $imports,
         private readonly DocumentAnalysisService $analysis,
         private readonly SignatureService $signature,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly CsrfTokenManager $csrf
     ) {
         parent::__construct($view);
     }
 
     public function index(): Response
     {
-        return $this->render('documents.index');
+        return $this->render('documents.index', ['csrf' => $this->csrf->token()]);
     }
 
     public function upload(Request $request): Response
