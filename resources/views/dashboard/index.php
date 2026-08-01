@@ -73,10 +73,17 @@ ob_start();
     <section aria-label="Dokumentenstatus">
         <div class="grid grid-4">
             <?php foreach ($statusLabels as $key => $label): ?>
-                <div class="stat-card <?= $key === 'error' ? 'is-error' : '' ?> <?= in_array($key, ['signed', 'sent'], true) ? 'is-success' : '' ?>">
-                    <span class="stat-value"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
-                    <span class="stat-label"><?= e($label) ?></span>
-                </div>
+                <?php if ($key === 'signed'): ?>
+                    <a class="stat-card is-success stat-card-link" href="/dashboard/signed" aria-label="Unterschriebene Dokumente von heute anzeigen">
+                        <span class="stat-value"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
+                        <span class="stat-label"><?= e($label) ?></span>
+                    </a>
+                <?php else: ?>
+                    <div class="stat-card <?= $key === 'error' ? 'is-error' : '' ?> <?= $key === 'sent' ? 'is-success' : '' ?>">
+                        <span class="stat-value"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
+                        <span class="stat-label"><?= e($label) ?></span>
+                    </div>
+                <?php endif; ?>
             <?php endforeach; ?>
         </div>
     </section>

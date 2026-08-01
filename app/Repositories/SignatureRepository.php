@@ -19,4 +19,14 @@ final class SignatureRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+
+    /** @return array<string,mixed>|null */
+    public function latestForDocument(int $documentId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM signatures WHERE document_id = :document_id ORDER BY signed_at DESC, id DESC LIMIT 1');
+        $stmt->execute(['document_id' => $documentId]);
+        $row = $stmt->fetch();
+
+        return is_array($row) ? $row : null;
+    }
 }

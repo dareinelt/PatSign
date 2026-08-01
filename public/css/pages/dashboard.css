@@ -93,3 +93,72 @@
     display: flex;
     gap: var(--space-2);
 }
+
+/* Klickbare Statuskachel (Unterschrieben) */
+a.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.stat-card-link:hover,
+a.stat-card-link:focus-visible {
+    border-color: var(--color-success);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+}
+
+/* Übersicht: Heute unterschriebene Dokumente */
+.signed-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--space-4);
+}
+
+.signed-doc-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.signed-doc-meta .patient-name {
+    font-weight: var(--font-weight-semibold);
+}
+
+.signed-doc-meta .patient-meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.signed-doc-preview {
+    height: 360px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.signed-doc-preview .pdf-page {
+    display: block;
+    max-width: 100%;
+    background: #fff;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+    flex: none;
+}
+
+.signed-doc-preview .pdf-viewer-message {
+    margin: auto;
+    color: var(--color-text-muted, #6b7280);
+    text-align: center;
+    padding: var(--space-4);
+}
+
+.signed-doc-preview .pdf-viewer-message.is-error {
+    color: var(--color-danger, #b91c1c);
+}
