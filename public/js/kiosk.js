@@ -300,6 +300,9 @@
             live.textContent = heading.textContent;
         }
         window.scrollTo({ top: 0, behavior: "smooth" });
+        if (canvas && steps[currentStep].contains(canvas)) {
+            resizeCanvasSoon();
+        }
     }
 
     function startWizard(state) {
@@ -416,6 +419,7 @@
         if (rect.width === 0) {
             return;
         }
+        var image = hasSignature ? canvas.toDataURL() : null;
         canvas.width = rect.width * ratio;
         canvas.height = rect.height * ratio;
         signatureCtx = canvas.getContext("2d");
@@ -424,6 +428,13 @@
         signatureCtx.lineCap = "round";
         signatureCtx.lineJoin = "round";
         signatureCtx.strokeStyle = "#1a2733";
+        if (image) {
+            var img = new Image();
+            img.onload = function () {
+                signatureCtx.drawImage(img, 0, 0, rect.width, rect.height);
+            };
+            img.src = image;
+        }
     }
 
     function resetSignature() {
@@ -461,6 +472,12 @@
 
         canvas.addEventListener("pointerdown", function (event) {
             event.preventDefault();
+            if (!signatureCtx) {
+                resizeCanvas();
+                if (!signatureCtx) {
+                    return;
+                }
+            }
             drawing = true;
             canvas.setPointerCapture(event.pointerId);
             var pos = pointerPosition(event);
@@ -490,7 +507,9 @@
         var clearButton = document.getElementById("signature-clear");
         if (clearButton) {
             clearButton.addEventListener("click", function () {
-                signatureCtx.clearRect(0, 0, canvas.width, canvas.height);
+                if (signatureCtx) {
+                    signatureCtx.clearRect(0, 0, canvas.width, canvas.height);
+                }
                 hasSignature = false;
                 if (padWrapper) {
                     padWrapper.classList.remove("has-signature");
