@@ -1,0 +1,14 @@
+/vendor/
+/.idea/
+/.vscode/
+/.env
+/.env.local
+/node_modules/
+/storage/logs/*.log
+/storage/tmp/*
+/storage/uploads/*
+/storage/imports/*
+/storage/processed/*
+/storage/signatures/*
+/storage/network-share/*
+!.gitkeep

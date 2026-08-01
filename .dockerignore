@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+vendor
+node_modules
+storage/tmp
+storage/uploads
+storage/imports
+storage/processed
+storage/signatures
+storage/network-share
