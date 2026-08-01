@@ -6,6 +6,7 @@ namespace App\Core;
 
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;
+use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
@@ -16,6 +17,9 @@ use App\Middleware\CsrfMiddleware;
 use App\Middleware\RouteGuardMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\AnalysisRunRepository;
+use App\Repositories\ClearingCaseRepository;
+use App\Repositories\ClearingErrorReasonRepository;
 use App\Repositories\DeviceAssignmentRepository;
 use App\Repositories\DeviceHistoryRepository;
 use App\Repositories\DeviceRepository;
@@ -23,6 +27,7 @@ use App\Repositories\DeviceSessionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\DocumentTypeRepository;
 use App\Repositories\NotificationRepository;
+use App\Repositories\PatientFolderRepository;
 use App\Repositories\PromptRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\SignatureRepository;
@@ -33,6 +38,7 @@ use App\Security\DeviceTokenManager;
 use App\Security\PasswordHasher;
 use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
+use App\Services\ClearingService;
 use App\Services\CompletionPageService;
 use App\Services\DeviceService;
 use App\Services\DocumentAnalysisService;
@@ -120,11 +126,28 @@ final class ApplicationFactory
         ));
 
         $container->singleton(NotificationRepository::class, fn (Container $c) => new NotificationRepository($c->get(\PDO::class)));
+        $container->singleton(ClearingCaseRepository::class, fn (Container $c) => new ClearingCaseRepository($c->get(\PDO::class)));
+        $container->singleton(PatientFolderRepository::class, fn (Container $c) => new PatientFolderRepository($c->get(\PDO::class)));
+        $container->singleton(ClearingErrorReasonRepository::class, fn (Container $c) => new ClearingErrorReasonRepository($c->get(\PDO::class)));
+        $container->singleton(AnalysisRunRepository::class, fn (Container $c) => new AnalysisRunRepository($c->get(\PDO::class)));
+        $container->singleton(ClearingService::class, fn (Container $c) => new ClearingService(
+            $c->get(ClearingCaseRepository::class),
+            $c->get(PatientFolderRepository::class),
+            $c->get(ClearingErrorReasonRepository::class),
+            $c->get(AnalysisRunRepository::class),
+            $c->get(DocumentRepository::class),
+            $c->get(AuditLogRepository::class),
+            $c->get(NotificationRepository::class),
+            $c->get(SettingsService::class),
+            $basePath
+        ));
         $container->singleton(DocumentProcessingService::class, fn (Container $c) => new DocumentProcessingService(
             $c->get(DocumentAnalysisService::class),
             $c->get(DocumentRepository::class),
             $c->get(NotificationRepository::class),
-            $c->get(AuditLogRepository::class)
+            $c->get(AuditLogRepository::class),
+            $c->get(ClearingService::class),
+            $c->get(AnalysisRunRepository::class)
         ));
 
         return $container;
@@ -166,6 +189,7 @@ final class ApplicationFactory
             $container->get(MailService::class),
             $container->get(NetworkShareService::class),
             $container->get(DeviceService::class),
+            $container->get(ClearingErrorReasonRepository::class),
             $container->get(CsrfTokenManager::class)
         );
         $dashboardController = new DashboardController(
@@ -176,6 +200,13 @@ final class ApplicationFactory
             $container->get(SystemStatusService::class),
             $container->get(SettingsService::class),
             $container->get(DeviceService::class),
+            $container->get(ClearingService::class),
+            $container->get(CsrfTokenManager::class)
+        );
+        $clearingController = new ClearingController(
+            $container->get(View::class),
+            $container->get(ClearingService::class),
+            $container->get(SettingsService::class),
             $container->get(CsrfTokenManager::class)
         );
         $patientController = new PatientController(
@@ -207,7 +238,7 @@ final class ApplicationFactory
         );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),

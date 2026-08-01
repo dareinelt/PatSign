@@ -1,0 +1,191 @@
+/* Clearing-Bereich: Übersicht und Detailansicht */
+
+/* Badge in der Hauptnavigation */
+.sidebar-nav .nav-badge {
+    margin-left: auto;
+    min-width: 1.5rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--color-danger, #c53030);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Übersicht */
+.clearing-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    flex-wrap: wrap;
+}
+
+.clearing-table td {
+    vertical-align: middle;
+}
+
+.clearing-filename {
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clearing-missing {
+    color: var(--color-danger, #c53030);
+    font-weight: 600;
+}
+
+.confidence-pill {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--color-surface-muted, #eee);
+}
+
+.confidence-pill.is-low {
+    background: #fde8e8;
+    color: #9b1c1c;
+}
+
+.confidence-pill.is-medium {
+    background: #fdf6b2;
+    color: #8e4b10;
+}
+
+.confidence-pill.is-high {
+    background: #def7ec;
+    color: #046c4e;
+}
+
+/* Detailansicht: Dokument groß links, Metadaten rechts */
+.clearing-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(20rem, 5fr);
+    gap: var(--space-4, 1.25rem);
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .clearing-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+.clearing-detail-status {
+    display: flex;
+    gap: var(--space-2, 0.5rem);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.clearing-preview-card {
+    position: sticky;
+    top: var(--space-4, 1.25rem);
+}
+
+.clearing-pdf-viewer {
+    height: min(78vh, 60rem);
+    overflow: auto;
+    background: var(--color-surface-muted, #f3f4f6);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-2, 0.5rem);
+}
+
+.clearing-pdf-viewer .pdf-page {
+    display: block;
+    margin: 0 auto var(--space-2, 0.5rem);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.clearing-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+}
+
+.clearing-side .card + .card {
+    margin-top: 0;
+}
+
+.clearing-values {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.clearing-values > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.clearing-values dt {
+    color: var(--color-text-muted, #6b7280);
+}
+
+.clearing-values dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+.clearing-json summary {
+    cursor: pointer;
+    margin-top: var(--space-2, 0.5rem);
+    color: var(--color-text-muted, #6b7280);
+}
+
+.clearing-json pre {
+    max-height: 18rem;
+    overflow: auto;
+    background: var(--color-surface-muted, #f3f4f6);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-2, 0.5rem);
+    font-size: 0.8rem;
+}
+
+.clearing-new-folder summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.clearing-reanalyze-actions {
+    display: flex;
+    gap: var(--space-2, 0.5rem);
+    flex-wrap: wrap;
+}
+
+.clearing-patient-search {
+    position: relative;
+}
+
+.clearing-patient-search .search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+}
+
+/* Touch-freundliche Trefferliste */
+.clearing-patient-search .search-results button {
+    width: 100%;
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.clearing-patient-search .search-results button:hover,
+.clearing-patient-search .search-results button:focus-visible {
+    background: var(--color-surface-muted, #f3f4f6);
+}

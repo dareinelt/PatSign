@@ -18,6 +18,19 @@ $eventLabels = [
     'mail_error' => 'Fehler beim Mailversand',
     'document_imported' => 'Dokument importiert',
     'document_analyzed' => 'Analyse abgeschlossen',
+    'document_moved_to_clearing' => 'Dokument ins Clearing verschoben',
+    'clearing_case_opened' => 'Clearing-Fall geöffnet',
+    'clearing_values_updated' => 'Clearing: Werte manuell geändert',
+    'clearing_document_assigned' => 'Clearing: Dokument zugeordnet',
+    'clearing_document_released' => 'Clearing: Dokument übernommen',
+    'clearing_document_archived' => 'Clearing: Dokument archiviert',
+    'clearing_reanalysis_started' => 'Clearing: KI erneut gestartet',
+    'clearing_reanalysis_succeeded' => 'Clearing: Neuanalyse erfolgreich',
+    'clearing_reanalysis_failed' => 'Clearing: Neuanalyse fehlgeschlagen',
+    'clearing_completed' => 'Clearing abgeschlossen',
+    'patient_folder_created' => 'Neue Patientenmappe erstellt',
+    'temporary_folder_created' => 'Temporäre Patientenmappe erstellt',
+    'case_number_added' => 'Fallnummer ergänzt',
     'device_folder_sent' => 'Patientenmappe an Gerät gesendet',
     'device_session_started' => 'Gerätesitzung gestartet',
     'device_session_ended' => 'Gerätesitzung beendet',
@@ -32,6 +45,8 @@ $deviceAvailabilityMeta = [
     'retired' => ['label' => 'Außer Betrieb', 'badge' => 'badge-neutral'],
 ];
 $devices = $devices ?? [];
+$clearingStats = $clearingStats ?? [];
+$canClearing = in_array(($user['role'] ?? ''), ['admin', 'operator'], true);
 
 ob_start();
 ?>
@@ -89,6 +104,62 @@ ob_start();
     </section>
 
     <div class="dashboard-grid">
+        <?php if ($canClearing): ?>
+            <section class="card col-span-12" aria-label="Clearing">
+                <div class="card-header">
+                    <h2>Clearing</h2>
+                    <span class="badge <?= ((int) ($clearingStats['open_count'] ?? 0)) > 0 ? 'badge-warning' : 'badge-success' ?>">
+                        <?= (int) ($clearingStats['open_count'] ?? 0) ?> offen
+                    </span>
+                </div>
+                <div class="grid grid-4">
+                    <div class="stat-card <?= ((int) ($clearingStats['open_count'] ?? 0)) > 0 ? 'is-error' : '' ?>">
+                        <span class="stat-value"><?= (int) ($clearingStats['open_count'] ?? 0) ?></span>
+                        <span class="stat-label">Offene Dokumente</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value"><?= (int) ($clearingStats['new_today'] ?? 0) ?></span>
+                        <span class="stat-label">Neu heute</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value"><?= isset($clearingStats['lowest_confidence']) && $clearingStats['lowest_confidence'] !== null ? number_format((float) $clearingStats['lowest_confidence'] * 100, 0) . ' %' : '–' ?></span>
+                        <span class="stat-label">Niedrigste KI-Konfidenz</span>
+                    </div>
+                    <div class="stat-card <?= ((int) ($clearingStats['older_24h'] ?? 0)) > 0 ? 'is-error' : '' ?>">
+                        <span class="stat-value"><?= (int) ($clearingStats['older_24h'] ?? 0) ?> / <?= (int) ($clearingStats['older_7d'] ?? 0) ?></span>
+                        <span class="stat-label">Älter als 24 h / 7 Tage</span>
+                    </div>
+                </div>
+                <div class="grid grid-4 mt-2">
+                    <div class="stat-card">
+                        <span class="stat-value"><?= isset($clearingStats['avg_clearing_minutes']) && $clearingStats['avg_clearing_minutes'] !== null ? (int) $clearingStats['avg_clearing_minutes'] . ' min' : '–' ?></span>
+                        <span class="stat-label">Ø Clearing-Zeit</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value"><?= (int) ($clearingStats['manual_assignments'] ?? 0) ?></span>
+                        <span class="stat-label">Manuelle Zuordnungen</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value"><?= (int) ($clearingStats['successful_reanalyses'] ?? 0) ?></span>
+                        <span class="stat-label">Erfolgreiche KI-Neuanalysen</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" style="font-size: 1rem; line-height: 1.4;">
+                            <?php $topReasons = array_slice($clearingStats['top_error_reasons'] ?? [], 0, 2); ?>
+                            <?= $topReasons === [] ? '–' : e(implode(', ', array_map(static fn (array $r): string => $r['label'] . ' (' . $r['total'] . ')', $topReasons))) ?>
+                        </span>
+                        <span class="stat-label">Häufigste Fehlergründe</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a class="btn btn-primary" href="/clearing">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+                        Clearing öffnen
+                    </a>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <section class="card col-span-8" aria-label="Wartende Patienten">
             <div class="card-header">
                 <h2>Wartende Patienten</h2>

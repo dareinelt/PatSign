@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Repositories\ClearingErrorReasonRepository;
 use App\Repositories\DocumentTypeRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\UserRepository;
@@ -31,6 +32,7 @@ final class AdminController extends BaseController
         'export' => 'Export',
         'smtp' => 'SMTP',
         'logging' => 'Logging',
+        'clearing' => 'Clearing',
         'users' => 'Benutzer',
         'roles' => 'Rollen',
         'devices' => 'Geräteverwaltung',
@@ -48,6 +50,7 @@ final class AdminController extends BaseController
         private readonly MailService $mail,
         private readonly NetworkShareService $networkShare,
         private readonly DeviceService $devices,
+        private readonly ClearingErrorReasonRepository $clearingErrorReasons,
         private readonly CsrfTokenManager $csrf
     ) {
         parent::__construct($view);
@@ -84,6 +87,9 @@ final class AdminController extends BaseController
         }
         if ($section === 'roles') {
             $data['roles'] = $this->roles->all();
+        }
+        if ($section === 'clearing') {
+            $data['errorReasons'] = $this->clearingErrorReasons->all();
         }
         if ($section === 'devices') {
             $data['devices'] = $this->devices->overview();
@@ -312,6 +318,39 @@ final class AdminController extends BaseController
         return Response::redirect('/admin/devices');
     }
 
+    /** Standardisierte Clearing-Fehlergründe verwalten (administrativ erweiterbar). */
+    public function saveClearingErrorReason(Request $request): Response
+    {
+        $action = (string) $request->input('action', 'create');
+        $id = (int) $request->input('id');
+        $code = strtoupper(trim((string) $request->input('code')));
+        $label = trim((string) $request->input('label'));
+        $isActive = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOL);
+
+        try {
+            if ($action === 'delete' && $id > 0) {
+                $this->clearingErrorReasons->delete($id);
+                $this->flash('Fehlergrund gelöscht.');
+            } elseif ($action === 'update' && $id > 0 && $label !== '') {
+                $this->clearingErrorReasons->update($id, $label, $isActive);
+                $this->flash('Fehlergrund aktualisiert.');
+            } elseif ($code !== '' && $label !== '') {
+                if (preg_match('/^[A-Z0-9_]{2,64}$/', $code) !== 1) {
+                    $this->flash('Code darf nur A–Z, Ziffern und Unterstriche enthalten.', 'error');
+                } else {
+                    $this->clearingErrorReasons->create($code, $label);
+                    $this->flash('Fehlergrund angelegt.');
+                }
+            } else {
+                $this->flash('Bitte Code und Bezeichnung angeben.', 'error');
+            }
+        } catch (\Throwable) {
+            $this->flash('Aktion fehlgeschlagen. Existiert der Code bereits?', 'error');
+        }
+
+        return Response::redirect('/admin/clearing');
+    }
+
     public function updatePrompt(Request $request): Response
     {
         $id = $this->prompts->createVersion(
@@ -391,6 +430,10 @@ final class AdminController extends BaseController
                 'retention_days' => 'logging.retention_days',
                 'log_path' => 'logging.path',
             ],
+            'clearing' => [
+                'confidence_threshold' => 'clearing.confidence_threshold',
+                'max_ai_attempts' => 'clearing.max_ai_attempts',
+            ],
             'system' => [
                 'language' => 'system.language',
                 'timezone' => 'system.timezone',
@@ -405,6 +448,11 @@ final class AdminController extends BaseController
         return match ($section) {
             'import' => ['auto_import' => 'import.auto_import'],
             'export' => ['pdfa_enabled' => 'export.pdfa_enabled'],
+            'clearing' => [
+                'auto_clearing_enabled' => 'clearing.auto_clearing_enabled',
+                'allow_temporary_folders' => 'clearing.allow_temporary_folders',
+                'auto_reanalysis' => 'clearing.auto_reanalysis',
+            ],
             'system' => ['maintenance_mode' => 'system.maintenance_mode', 'debug_mode' => 'system.debug_mode'],
             default => [],
         };

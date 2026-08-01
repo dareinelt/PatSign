@@ -40,6 +40,18 @@ Die Geräteverwaltung im Administrationsbereich bietet:
 
 Die Geräteauthentifizierung nutzt UUIDs, gerätegebundene Tokens, gehashte Tokenablage und rotierende Session-Tokens pro Zuweisung. Dokumente werden im Kioskmodus nur über den autorisierten Kiosk-Endpunkt der aktiven Zuweisung ausgeliefert.
 
+### Clearing für nicht zuordenbare Dokumente
+
+- Dokumente, die die KI nicht eindeutig einer Patientenmappe zuordnen kann (fehlende/ungültige Fallnummer, niedrige Konfidenz, unbekannter Dokumenttyp, mehrere Treffer, Analysefehler), landen automatisch im Clearing-Bereich statt verworfen zu werden
+- Übersicht mit Mehrfachauswahl: mehrere Dokumente gleichzeitig einem Patienten zuordnen, einer neuen Mappe hinzufügen oder archivieren
+- Detailansicht mit großer PDF-Vorschau (Zoom), KI-Ergebnis, manuell korrigierbaren Werten und Live-Patientensuche
+- Neue oder temporäre Patientenmappen (ohne Fallnummer, Kennzeichnung „Temporär"); Fallnummer kann später nachgetragen werden, Dokumente werden dabei automatisch umbenannt
+- „Analyse erneut starten": Vision, Analysemodell oder beide erneut ausführen; frühere Ergebnisse bleiben historisch erhalten
+- Standardisierte, administrativ erweiterbare Fehlercodes (z. B. `NO_CASE_NUMBER`, `LOW_CONFIDENCE`, `MULTIPLE_MATCHES`)
+- Navigation mit Badge offener Vorgänge, Dashboard-Widget und Clearing-Statistiken (durchschnittliche Bearbeitungszeit, häufigste Fehlergründe, manuelle Zuordnungen, erfolgreiche Neuanalysen)
+- Zugriff nur für Rollen `admin` und `operator`; alle Schritte werden revisionssicher in Audit-Log und Fallhistorie protokolliert
+- Konfigurierbar in der Administration: Konfidenzschwellwert, automatische Clearing-Zuordnung, temporäre Mappen, automatische Neuanalyse, maximale KI-Versuche
+
 ### Administration
 
 Der Administrationsbereich unter `/admin` ist rollenbeschränkt und enthält die Module:
@@ -194,6 +206,9 @@ Die wichtigsten Services sind unter anderem `PdfImportService`, `DocumentAnalysi
 | `/kiosk` | Tablet-Kioskmodus |
 | `/kiosk/register`, `/kiosk/reconnect`, `/kiosk/state`, `/kiosk/poll`, `/kiosk/heartbeat`, `/kiosk/document`, `/kiosk/sign` | Registrierung, Long Polling, Heartbeat und Signatur für Geräte |
 | `/devices/overview`, `/devices/assign` | Geräteübersicht und Zuweisung durch medizinisches Personal |
+| `/clearing` | Clearing-Übersicht für nicht zuordenbare Dokumente |
+| `/clearing/case`, `/clearing/document`, `/clearing/patients/search` | Detailansicht, PDF-Auslieferung und Live-Patientensuche |
+| `/clearing/update`, `/clearing/assign`, `/clearing/folder`, `/clearing/case-number`, `/clearing/reanalyze`, `/clearing/complete`, `/clearing/archive` | Werte korrigieren, zuordnen, Mappen anlegen, Neuanalyse und Abschluss |
 | `/admin/*` | Administrationsmodule |
 | `/admin/ai/models`, `/admin/ai/test` | Modellliste und Verbindungstest für KI-Endpunkte |
 | `/admin/share/test` | Zugriffstest für Netzwerkfreigaben |

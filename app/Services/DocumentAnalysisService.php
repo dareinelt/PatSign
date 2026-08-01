@@ -17,8 +17,18 @@ final class DocumentAnalysisService
         private readonly DocumentTypeRepository $documentTypes
     ) {}
 
-    /** @return array<string,mixed> */
+    /** @return array<string,mixed> Analyseergebnis inkl. "extracted_text" (Vision-Rohtext) */
     public function analyze(string $pdfPath): array
+    {
+        $extractedText = $this->extractText($pdfPath);
+        $result = $this->analyzeText($extractedText);
+        $result['extracted_text'] = $extractedText;
+
+        return $result;
+    }
+
+    /** Vision-Schritt: extrahiert den Text aller PDF-Seiten. */
+    public function extractText(string $pdfPath): string
     {
         if (!is_file($pdfPath)) {
             throw new RuntimeException('PDF nicht gefunden.');
@@ -43,7 +53,12 @@ final class DocumentAnalysisService
             ]],
         ]);
 
-        $extractedText = (string) ($visionResponse['choices'][0]['message']['content'] ?? '');
+        return (string) ($visionResponse['choices'][0]['message']['content'] ?? '');
+    }
+
+    /** Analyse-Schritt: extrahiert strukturierte Daten aus bereits vorliegendem Text. @return array<string,mixed> */
+    public function analyzeText(string $extractedText): array
+    {
         $analysisModel = $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b';
         $analysisMessages = [[
             'role' => 'system',
