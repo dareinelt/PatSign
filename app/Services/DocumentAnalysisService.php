@@ -43,20 +43,35 @@ final class DocumentAnalysisService
 
         $extractedText = (string) ($visionResponse['choices'][0]['message']['content'] ?? '');
         $analysisPrompt = $this->promptService->getActivePrompt('analysis');
-        $analysisResponse = $this->analysisClient->chat([
-            'model' => $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b',
-            'response_format' => ['type' => 'json_object'],
-            'messages' => [[
-                'role' => 'system',
-                'content' => $analysisPrompt,
-            ], [
-                'role' => 'user',
-                'content' => $extractedText,
-            ]],
-        ]);
+        $analysisModel = $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b';
+        $analysisMessages = [[
+            'role' => 'system',
+            'content' => $analysisPrompt,
+        ], [
+            'role' => 'user',
+            'content' => $extractedText,
+        ]];
 
-        $json = (string) ($analysisResponse['choices'][0]['message']['content'] ?? '{}');
-        $structured = json_decode($json, true);
+        try {
+            $analysisResponse = $this->analysisClient->chat([
+                'model' => $analysisModel,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => $analysisMessages,
+            ]);
+        } catch (RuntimeException $e) {
+            // Manche lokalen Endpunkte (z. B. LM Studio) lehnen "response_format"
+            // mit HTTP 4xx ab – dann ohne strukturierten Modus erneut versuchen.
+            if ($e->getCode() < 400 || $e->getCode() >= 500) {
+                throw $e;
+            }
+            $analysisResponse = $this->analysisClient->chat([
+                'model' => $analysisModel,
+                'messages' => $analysisMessages,
+            ]);
+        }
+
+        $content = (string) ($analysisResponse['choices'][0]['message']['content'] ?? '{}');
+        $structured = $this->decodeJsonResponse($content);
         if (!is_array($structured)) {
             throw new RuntimeException('Analysemodell lieferte kein gültiges JSON.');
         }
@@ -66,6 +81,33 @@ final class DocumentAnalysisService
         $structured['case_number_confidence'] = $caseNumber['confidence'];
 
         return $structured;
+    }
+
+    /**
+     * Dekodiert die Modellantwort als JSON. Toleriert Markdown-Zäune
+     * (```json …```) und Prosa vor/nach dem eigentlichen JSON-Objekt.
+     */
+    private function decodeJsonResponse(string $content): mixed
+    {
+        $decoded = json_decode(trim($content), true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $content, $m) === 1) {
+            $decoded = json_decode($m[1], true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $start = strpos($content, '{');
+        $end = strrpos($content, '}');
+        if ($start !== false && $end !== false && $end > $start) {
+            return json_decode(substr($content, $start, $end - $start + 1), true);
+        }
+
+        return null;
     }
 
     /** @return array<int,string> */

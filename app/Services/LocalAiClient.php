@@ -126,10 +126,36 @@ final class LocalAiClient
         curl_close($ch);
 
         if ($status >= 400) {
-            throw new RuntimeException('Lokaler KI-Dienst-Fehler: HTTP ' . $status);
+            $detail = $this->extractErrorDetail((string) $result);
+            throw new RuntimeException(
+                'Lokaler KI-Dienst-Fehler: HTTP ' . $status . ($detail !== '' ? ' – ' . $detail : ''),
+                $status
+            );
         }
 
         /** @var array<string,mixed> */
         return json_decode((string) $result, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Extrahiert eine aussagekräftige Fehlermeldung aus dem Antwort-Body
+     * (OpenAI-kompatibel: {"error": {"message": "..."}} oder {"error": "..."}).
+     */
+    private function extractErrorDetail(string $body): string
+    {
+        $decoded = json_decode($body, true);
+        if (is_array($decoded)) {
+            $error = $decoded['error'] ?? null;
+            if (is_array($error) && isset($error['message'])) {
+                return trim((string) $error['message']);
+            }
+            if (is_string($error)) {
+                return trim($error);
+            }
+        }
+
+        $body = trim($body);
+
+        return mb_strlen($body) > 300 ? mb_substr($body, 0, 300) . '…' : $body;
     }
 }
