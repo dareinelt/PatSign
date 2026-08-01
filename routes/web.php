@@ -8,6 +8,7 @@ use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
+use App\Controllers\FormController;
 use App\Controllers\KioskController;
 use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
@@ -24,7 +25,8 @@ return static function (
     KioskController $kiosk,
     DeviceController $devices,
     NotificationController $notifications,
-    ClearingController $clearing
+    ClearingController $clearing,
+    FormController $forms
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
@@ -72,6 +74,13 @@ return static function (
     $router->post('/patient/sign', static fn (Request $request) => $patient->sign($request));
     $router->post('/patient/exit', static fn () => $patient->exit());
 
+    // Formulare (Patientenmodus): Struktur, Autosave, Validierung, Abschluss
+    $router->get('/patient/form', static fn (Request $request) => $forms->patientStructure($request));
+    $router->post('/patient/form', static fn (Request $request) => $forms->patientStructure($request));
+    $router->post('/patient/form/save', static fn (Request $request) => $forms->patientSave($request));
+    $router->post('/patient/form/validate', static fn (Request $request) => $forms->patientValidate($request));
+    $router->post('/patient/form/complete', static fn (Request $request) => $forms->patientComplete($request));
+
     // Kioskmodus (registrierte Signaturgeräte, Geräteauth im Controller)
     $router->get('/kiosk', static fn (Request $request) => $kiosk->index($request));
     $router->post('/kiosk/register', static fn (Request $request) => $kiosk->register($request));
@@ -82,13 +91,20 @@ return static function (
     $router->get('/kiosk/document', static fn (Request $request) => $kiosk->document($request));
     $router->post('/kiosk/sign', static fn (Request $request) => $kiosk->sign($request));
 
+    // Formulare (Kioskmodus): Geräteauth im Controller, nur zugewiesene Mappe
+    $router->get('/kiosk/form', static fn (Request $request) => $forms->kioskStructure($request));
+    $router->post('/kiosk/form', static fn (Request $request) => $forms->kioskStructure($request));
+    $router->post('/kiosk/form/save', static fn (Request $request) => $forms->kioskSave($request));
+    $router->post('/kiosk/form/validate', static fn (Request $request) => $forms->kioskValidate($request));
+    $router->post('/kiosk/form/complete', static fn (Request $request) => $forms->kioskComplete($request));
+
     // Geräte (medizinisches Personal)
     $router->get('/devices/overview', static fn () => $devices->overview());
     $router->post('/devices/assign', static fn (Request $request) => $devices->assign($request));
 
     // Administration
     $router->get('/admin', static fn () => \App\Core\Response::redirect('/admin/general'));
-    foreach (['general', 'completion-page', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'clearing', 'users', 'roles', 'devices', 'system'] as $section) {
+    foreach (['general', 'completion-page', 'ai', 'forms', 'document-types', 'import', 'export', 'smtp', 'logging', 'clearing', 'users', 'roles', 'devices', 'system'] as $section) {
         $router->get('/admin/' . $section, static fn () => $admin->section($section));
     }
     $router->post('/admin/clearing-error-reasons', static fn (Request $request) => $admin->saveClearingErrorReason($request));

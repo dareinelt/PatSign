@@ -51,7 +51,11 @@ final class CompletionPageService
         }
 
         $localPath = rtrim($this->processedPath, '/\\') . DIRECTORY_SEPARATOR . $finalName;
-        $originalPath = (string) ($document['original_path'] ?? '');
+        // Bei interaktiven Formularen wird die serverseitig ausgefüllte
+        // Version als Quelle verwendet; das Original bleibt unverändert.
+        $originalPath = (string) ($context['source_pdf_path'] ?? '') !== ''
+            ? (string) $context['source_pdf_path']
+            : (string) ($document['original_path'] ?? '');
         $signatureData = (string) ($context['signature_data'] ?? '');
 
         $this->buildSignedPdf($originalPath, $localPath, $vars, $signatureData, (bool) ($context['email_consent'] ?? false));

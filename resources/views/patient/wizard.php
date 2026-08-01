@@ -4,6 +4,7 @@ require_once __DIR__ . '/../partials/helpers.php';
 $documentsJson = json_encode(array_map(static fn (array $d): array => [
     'id' => (int) $d['id'],
     'document_type' => (string) ($d['document_type'] ?? 'Dokument'),
+    'has_form' => (bool) ($d['has_form'] ?? false),
 ], $documents ?? []), JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT);
 
 ob_start();
@@ -84,6 +85,10 @@ ob_start();
                     <span class="text-muted text-sm" id="doc-counter"></span>
                 </div>
                 <div class="doc-viewer-frame" id="doc-frame" role="document" aria-label="Dokumentanzeige mit Blättern und Zoom"></div>
+            </div>
+            <div class="form-progress hidden" id="form-progress" aria-live="polite">
+                <span id="form-progress-label"></span>
+                <span class="form-progress-bar"><span class="form-progress-fill" id="form-progress-fill"></span></span>
             </div>
             <p class="text-muted text-sm text-center mt-2 mb-0">
                 Zum Vergrößern zwei Finger auseinanderziehen, zum Blättern wischen oder scrollen.
@@ -201,5 +206,5 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $title = 'Ihre Dokumente – ' . ($clinicName ?? 'PatSign');
-$scripts = ['/js/pdf-viewer.js', '/js/patient.js'];
+$scripts = ['/js/pdf-viewer.js', '/js/form-overlay.js', '/js/patient.js'];
 include __DIR__ . '/../partials/layout.php';

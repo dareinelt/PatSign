@@ -103,7 +103,7 @@ final class DocumentRepository
         }
 
         $placeholders = implode(',', array_fill(0, count($caseNumbers), '?'));
-        $sql = "SELECT id, case_number, document_type, status, created_at
+        $sql = "SELECT id, case_number, document_type, status, is_interactive, form_status, created_at
                 FROM documents
                 WHERE case_number IN ($placeholders)
                 ORDER BY case_number, created_at";
@@ -174,6 +174,18 @@ final class DocumentRepository
     public function updateStatus(int $id, string $status): void
     {
         $this->pdo->prepare('UPDATE documents SET status = :status WHERE id = :id')->execute(['status' => $status, 'id' => $id]);
+    }
+
+    /** Formularstatus (und optional die Interaktiv-Kennzeichnung) aktualisieren. */
+    public function updateFormStatus(int $id, string $formStatus, ?bool $isInteractive = null): void
+    {
+        if ($isInteractive !== null) {
+            $this->pdo->prepare('UPDATE documents SET form_status = :fs, is_interactive = :ii WHERE id = :id')
+                ->execute(['fs' => $formStatus, 'ii' => $isInteractive ? 1 : 0, 'id' => $id]);
+
+            return;
+        }
+        $this->pdo->prepare('UPDATE documents SET form_status = :fs WHERE id = :id')->execute(['fs' => $formStatus, 'id' => $id]);
     }
 
     /**

@@ -28,8 +28,14 @@
     /**
      * Rendert das PDF unter `url` in den Container.
      * Ein späterer Aufruf bricht die Anzeige eines früheren Aufrufs ab.
+     *
+     * options (optional):
+     *   onPage(pageNumber, wrapper) – wird nach dem Rendern jeder Seite
+     *   aufgerufen; wrapper ist ein position:relative-Element über dem
+     *   Seiten-Canvas (z. B. für Formular-Overlays).
      */
-    function render(container, url) {
+    function render(container, url, options) {
+        options = options || {};
         if (!container) {
             return Promise.resolve();
         }
@@ -65,18 +71,27 @@
                             var scale = pageWidth / baseViewport.width;
                             var viewport = page.getViewport({ scale: scale * pixelRatio });
 
+                            var wrapper = document.createElement("div");
+                            wrapper.className = "pdf-page-wrap";
+                            wrapper.setAttribute("data-page-number", String(pageNumber));
+
                             var canvas = document.createElement("canvas");
                             canvas.className = "pdf-page";
                             canvas.width = Math.floor(viewport.width);
                             canvas.height = Math.floor(viewport.height);
                             canvas.style.width = Math.floor(viewport.width / pixelRatio) + "px";
                             canvas.style.height = Math.floor(viewport.height / pixelRatio) + "px";
-                            container.appendChild(canvas);
+                            wrapper.appendChild(canvas);
+                            container.appendChild(wrapper);
 
                             return page.render({
                                 canvasContext: canvas.getContext("2d"),
                                 viewport: viewport
-                            }).promise;
+                            }).promise.then(function () {
+                                if (token === renderToken && typeof options.onPage === "function") {
+                                    options.onPage(pageNumber, wrapper);
+                                }
+                            });
                         });
                     });
                 };
@@ -84,7 +99,11 @@
                 for (var i = 1; i <= pdf.numPages; i += 1) {
                     renderPage(i);
                 }
-                return chain;
+                return chain.then(function () {
+                    if (token === renderToken && typeof options.onComplete === "function") {
+                        options.onComplete(pdf.numPages);
+                    }
+                });
             })
             .catch(function (error) {
                 if (token === renderToken) {

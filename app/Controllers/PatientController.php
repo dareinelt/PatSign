@@ -12,6 +12,8 @@ use App\Repositories\DocumentRepository;
 use App\Repositories\SignatureRepository;
 use App\Security\CsrfTokenManager;
 use App\Services\CompletionPageService;
+use App\Services\Forms\FilledPdfService;
+use App\Services\Forms\FormResponseService;
 use App\Services\MailService;
 use App\Services\SettingsService;
 use App\Services\SignatureService;
@@ -31,7 +33,9 @@ final class PatientController extends BaseController
         private readonly AuditLogRepository $auditLogs,
         private readonly SettingsService $settings,
         private readonly MailService $mail,
-        private readonly CsrfTokenManager $csrf
+        private readonly CsrfTokenManager $csrf,
+        private readonly FormResponseService $forms,
+        private readonly FilledPdfService $filledPdf
     ) {
         parent::__construct($view);
     }
@@ -64,6 +68,12 @@ final class PatientController extends BaseController
     {
         $session = $this->patientSession();
         $documents = $this->documents->findByCaseNumber((string) $session['case_number']);
+
+        // Interaktive Dokumente erhalten im Wizard eine Eingabeebene.
+        foreach ($documents as &$document) {
+            $document['has_form'] = !empty($document['is_interactive']) && $this->forms->hasReadyForm((int) $document['id']);
+        }
+        unset($document);
 
         $first = $documents[0] ?? [];
 
@@ -125,6 +135,27 @@ final class PatientController extends BaseController
             return $this->json(['error' => 'Keine Dokumente gefunden.'], 404);
         }
 
+        // Interaktive Dokumente: alle Pflichtfelder müssen ausgefüllt sein,
+        // bevor die Unterschrift akzeptiert wird (serverseitige Prüfung).
+        $formSources = [];
+        foreach ($documents as $document) {
+            $documentId = (int) $document['id'];
+            if (empty($document['is_interactive']) || !$this->forms->hasReadyForm($documentId)) {
+                continue;
+            }
+            try {
+                $state = $this->forms->complete($document);
+                if (!$state['valid']) {
+                    return $this->json(['error' => 'Bitte füllen Sie zuerst alle Pflichtfelder des Formulars aus.'], 422);
+                }
+                $resolved = $this->forms->resolvedFields($document);
+                $filled = $this->filledPdf->render($document, $resolved['fields']);
+                $formSources[$documentId] = $filled + ['response_id' => (int) $resolved['response']['id']];
+            } catch (\RuntimeException $e) {
+                return $this->json(['error' => $e->getMessage()], 422);
+            }
+        }
+
         $clinic = $this->settings->getString('general.clinic_name', 'PatSign');
         $operator = (string) ($session['operator'] ?? '');
         $signedAt = date('Y-m-d H:i:s');
@@ -140,6 +171,8 @@ final class PatientController extends BaseController
             ]);
 
             // Abschlussseite erzeugen und an das Dokument anhängen.
+            $documentId = (int) $document['id'];
+            $formSource = $formSources[$documentId] ?? null;
             $paths = [
                 'signed_pdf_path' => $exportPath . '/' . $finalName,
                 'completion_page_path' => $exportPath . '/' . $finalName,
@@ -155,9 +188,21 @@ final class PatientController extends BaseController
                     'started_at' => (int) ($session['started_at'] ?? 0),
                     'signed_at' => $signedAt,
                     'final_name' => $finalName,
+                    'source_pdf_path' => $formSource !== null ? $formSource['path'] : '',
                 ]);
             } catch (\Throwable $e) {
-                $this->audit('completion_page_error', ['document_id' => (int) $document['id'], 'error' => $e->getMessage()]);
+                $this->audit('completion_page_error', ['document_id' => $documentId, 'error' => $e->getMessage()]);
+            }
+
+            // Formularinhalte nach der Unterschrift einfrieren.
+            if ($formSource !== null) {
+                $this->forms->markSigned($formSource['response_id'], $formSource['filled_document_id'], $paths['signed_pdf_path']);
+                $this->documents->updateFormStatus($documentId, 'signed');
+                $this->audit('form_merged_into_pdf', [
+                    'document_id' => $documentId,
+                    'filled_document_id' => $formSource['filled_document_id'],
+                ]);
+                @unlink($formSource['path']);
             }
 
             $this->signatures->create([

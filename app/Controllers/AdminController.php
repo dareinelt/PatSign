@@ -27,6 +27,7 @@ final class AdminController extends BaseController
         'general' => 'Allgemein',
         'completion-page' => 'Abschlussseite',
         'ai' => 'KI',
+        'forms' => 'Formulare',
         'document-types' => 'Dokumenttypen',
         'import' => 'Import',
         'export' => 'Export',
@@ -403,6 +404,10 @@ final class AdminController extends BaseController
                 'analysis_model' => 'ai.analysis.model',
                 'analysis_timeout' => 'ai.analysis.timeout',
             ],
+            'forms' => [
+                'vision_model' => 'forms.vision_model',
+                'autosave_interval' => 'forms.autosave_interval',
+            ],
             'import' => [
                 'import_path' => 'app.import_watch_path',
                 'import_domain' => 'import.share_domain',
@@ -447,6 +452,14 @@ final class AdminController extends BaseController
     private function checkboxFields(string $section): array
     {
         return match ($section) {
+            'forms' => [
+                'analysis_enabled' => 'forms.analysis_enabled',
+                'required_check_enabled' => 'forms.required_check_enabled',
+                'allow_handwriting' => 'forms.allow_handwriting',
+                'allow_keyboard' => 'forms.allow_keyboard',
+                'prefill_enabled' => 'forms.prefill_enabled',
+                'prefill_locked' => 'forms.prefill_locked',
+            ],
             'import' => ['auto_import' => 'import.auto_import'],
             'export' => ['pdfa_enabled' => 'export.pdfa_enabled'],
             'clearing' => [

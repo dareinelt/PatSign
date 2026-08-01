@@ -17,6 +17,13 @@
 - `GET /devices/overview` Geräteübersicht (JSON, für Dashboard)
 - `POST /devices/assign` Patientenmappe an Gerät senden
 
+## Formular-Endpunkte Patientenmodus (erfordern aktive Patientensitzung; Dokument muss zur Fallnummer gehören)
+
+- `GET|POST /patient/form?document_id=` Formularstruktur abrufen (Felder mit relativen Koordinaten 0–1, gespeicherte Werte, Vorbelegung, Konfiguration)
+- `POST /patient/form/save` Eingaben speichern (Autosave; `values` = JSON-Objekt `field_uuid => Wert`, liefert Feldfehler + Pflichtfeld-Fortschritt)
+- `POST /patient/form/validate` Formular serverseitig validieren
+- `POST /patient/form/complete` Formular abschließen (nur wenn alle Pflichtfelder gültig ausgefüllt sind, sofern Pflichtfeldprüfung aktiv)
+
 ## Kiosk-Endpunkte (Geräteauthentifizierung per `X-Device-Id`/`X-Device-Token` bzw. httpOnly-Cookies)
 
 - `GET /kiosk` Kioskoberfläche bzw. Registrierungsassistent
@@ -27,3 +34,9 @@
 - `POST /kiosk/heartbeat` Lebenszeichen (aktualisiert letzte Aktivität)
 - `GET /kiosk/document?id=` Autorisierte PDF-Auslieferung (nur Dokumente der aktiven Zuweisung, sonst 403)
 - `POST /kiosk/sign` Unterschriften speichern (erfordert `X-Session-Token`; gibt Gerät automatisch frei und rotiert das Gerätetoken)
+- `GET|POST /kiosk/form?document_id=` Formularstruktur abrufen (nur Dokumente der aktiven Zuweisung, sonst 403)
+- `POST /kiosk/form/save` Eingaben speichern (Autosave)
+- `POST /kiosk/form/validate` Formular serverseitig validieren
+- `POST /kiosk/form/complete` Formular abschließen (Pflichtfeld-Gate)
+
+Hinweise zu den Formular-Endpunkten: Nach der Unterschrift sind Formularantworten eingefroren (HTTP 409 bei Änderungsversuchen). Alle Validierungen erfolgen ausschließlich serverseitig; Felddefinitionen und Koordinaten sind nicht clientseitig manipulierbar (unbekannte Feld-UUIDs werden ignoriert).

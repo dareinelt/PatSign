@@ -11,6 +11,8 @@ use App\Core\View;
 use App\Security\CsrfTokenManager;
 use App\Services\DeviceService;
 use App\Services\CompletionPageService;
+use App\Services\Forms\FilledPdfService;
+use App\Services\Forms\FormResponseService;
 use App\Services\SettingsService;
 use App\Services\SignatureService;
 use App\Repositories\DocumentRepository;
@@ -36,7 +38,9 @@ final class KioskController extends BaseController
         private readonly SettingsService $settings,
         private readonly MailService $mail,
         private readonly CsrfTokenManager $csrf,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly FormResponseService $forms,
+        private readonly FilledPdfService $filledPdf
     ) {
         parent::__construct($view);
     }
@@ -213,6 +217,27 @@ final class KioskController extends BaseController
             return $this->json(['error' => 'Keine Dokumente gefunden.'], 404);
         }
 
+        // Interaktive Dokumente: Pflichtfelder serverseitig prüfen und die
+        // ausgefüllte Version für die Zusammenführung erzeugen.
+        $formSources = [];
+        foreach ($documents as $document) {
+            $documentId = (int) $document['id'];
+            if (empty($document['is_interactive']) || !$this->forms->hasReadyForm($documentId)) {
+                continue;
+            }
+            try {
+                $state = $this->forms->complete($document);
+                if (!$state['valid']) {
+                    return $this->json(['error' => 'Bitte füllen Sie zuerst alle Pflichtfelder des Formulars aus.'], 422);
+                }
+                $resolved = $this->forms->resolvedFields($document);
+                $filled = $this->filledPdf->render($document, $resolved['fields']);
+                $formSources[$documentId] = $filled + ['response_id' => (int) $resolved['response']['id']];
+            } catch (\RuntimeException $e) {
+                return $this->json(['error' => $e->getMessage()], 422);
+            }
+        }
+
         $clinic = $this->settings->getString('general.clinic_name', 'PatSign');
         $operator = $this->assignmentOperator($assignment);
         $signedAt = date('Y-m-d H:i:s');
@@ -228,6 +253,8 @@ final class KioskController extends BaseController
             ]);
 
             // Abschlussseite erzeugen und an das Dokument anhängen.
+            $documentId = (int) $document['id'];
+            $formSource = $formSources[$documentId] ?? null;
             $paths = [
                 'signed_pdf_path' => $exportPath . '/' . $finalName,
                 'completion_page_path' => $exportPath . '/' . $finalName,
@@ -243,9 +270,17 @@ final class KioskController extends BaseController
                     'started_at' => (string) ($session['started_at'] ?? ($assignment['assigned_at'] ?? '')),
                     'signed_at' => $signedAt,
                     'final_name' => $finalName,
+                    'source_pdf_path' => $formSource !== null ? $formSource['path'] : '',
                 ]);
             } catch (\Throwable) {
                 // Fehler beim PDF-Aufbau darf die Signatur nicht verhindern.
+            }
+
+            // Formularinhalte nach der Unterschrift einfrieren.
+            if ($formSource !== null) {
+                $this->forms->markSigned($formSource['response_id'], $formSource['filled_document_id'], $paths['signed_pdf_path']);
+                $this->documents->updateFormStatus($documentId, 'signed');
+                @unlink($formSource['path']);
             }
 
             $this->signatures->create([

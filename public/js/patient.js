@@ -55,6 +55,58 @@
     const docCounter = document.getElementById("doc-counter");
     const nextDocButton = document.getElementById("doc-next");
 
+    /* Formular-Overlay für interaktive Dokumente */
+    let formOverlay = null;
+    const formProgress = document.getElementById("form-progress");
+    const formProgressLabel = document.getElementById("form-progress-label");
+    const formProgressFill = document.getElementById("form-progress-fill");
+
+    function updateFormProgress(filled, total, complete) {
+        if (!formProgress) {
+            return;
+        }
+        if (total <= 0) {
+            formProgress.classList.add("hidden");
+            return;
+        }
+        formProgress.classList.remove("hidden");
+        formProgress.classList.toggle("is-complete", complete);
+        if (formProgressLabel) {
+            formProgressLabel.textContent = "Pflichtfelder: " + filled + " von " + total;
+        }
+        if (formProgressFill) {
+            formProgressFill.style.width = Math.round((filled / total) * 100) + "%";
+        }
+    }
+
+    function setupFormOverlay(doc) {
+        if (formOverlay) {
+            formOverlay.destroy();
+            formOverlay = null;
+        }
+        if (formProgress) {
+            formProgress.classList.add("hidden");
+        }
+        if (!doc.has_form || !window.PatSignFormOverlay) {
+            return Promise.resolve(null);
+        }
+        formOverlay = window.PatSignFormOverlay.create({
+            documentId: doc.id,
+            csrf: csrf,
+            endpoints: {
+                structure: "/patient/form",
+                save: "/patient/form/save",
+                complete: "/patient/form/complete"
+            },
+            onProgress: updateFormProgress
+        });
+        return formOverlay.load().catch(function () {
+            // Ohne Formularstruktur wird das Dokument normal angezeigt.
+            formOverlay = null;
+            return null;
+        });
+    }
+
     function loadDocument(index) {
         documentIndex = Math.max(0, Math.min(index, documents.length - 1));
         const doc = documents[documentIndex];
@@ -62,9 +114,18 @@
             return;
         }
 
-        if (frame && window.PatSignPdfViewer) {
-            window.PatSignPdfViewer.render(frame, "/patient/document?id=" + encodeURIComponent(doc.id));
-        }
+        setupFormOverlay(doc).then(function () {
+            if (frame && window.PatSignPdfViewer) {
+                const overlay = formOverlay;
+                window.PatSignPdfViewer.render(frame, "/patient/document?id=" + encodeURIComponent(doc.id), {
+                    onPage: function (pageNumber, wrapper) {
+                        if (overlay && overlay === formOverlay) {
+                            overlay.attachPage(pageNumber, wrapper);
+                        }
+                    }
+                });
+            }
+        });
         if (docTitle) {
             docTitle.textContent = doc.document_type || "Dokument";
         }
@@ -103,11 +164,33 @@
 
     if (nextDocButton) {
         nextDocButton.addEventListener("click", function () {
-            if (documentIndex < documents.length - 1) {
-                loadDocument(documentIndex + 1);
-            } else {
-                showStep(currentStep + 1);
+            function advance() {
+                if (documentIndex < documents.length - 1) {
+                    loadDocument(documentIndex + 1);
+                } else {
+                    showStep(currentStep + 1);
+                }
             }
+            // Pflichtfeld-Gate: interaktive Dokumente erst nach Abschluss weiter.
+            if (formOverlay) {
+                nextDocButton.disabled = true;
+                formOverlay.complete()
+                    .then(function (data) {
+                        if (data && data.valid) {
+                            advance();
+                        } else {
+                            window.PatSignUI.toast("Bitte füllen Sie zuerst alle Pflichtfelder aus.", "error");
+                        }
+                    })
+                    .catch(function (error) {
+                        window.PatSignUI.toast(error.message || "Formular konnte nicht geprüft werden.", "error");
+                    })
+                    .finally(function () {
+                        nextDocButton.disabled = false;
+                    });
+                return;
+            }
+            advance();
         });
     }
 

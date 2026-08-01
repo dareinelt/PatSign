@@ -127,9 +127,11 @@ final class DocumentAnalysisService
         $rules = [
             'AUSGABEREGELN (zwingend):',
             '- Antworte mit genau einem JSON-Objekt und sonst nichts: kein Markdown, keine Code-Zäune, keine Erklärungen, keine Gedankengänge.',
-            '- Verwende exakt diese Schlüssel: document_type, case_number, last_name, first_name, birth_date.',
+            '- Verwende exakt diese Schlüssel: document_type, case_number, last_name, first_name, birth_date, interactive, confidence.',
             '- Wenn eine Information nicht eindeutig im Text steht, setze den Wert auf null. Erfinde nichts.',
             '- birth_date im Format TT.MM.JJJJ.',
+            '- interactive ist true, wenn das Dokument vom Patienten ausgefüllt werden muss (z. B. Anamnesebogen, Fragebogen, Selbstauskunft, Einwilligung mit Ja-/Nein-Fragen, Risikofragebogen, OP-Fragebogen, Checkliste – erkennbar an Eingabefeldern, Ankreuzfragen, Linien oder Tabellen zum Ausfüllen); sonst false.',
+            '- confidence ist deine Sicherheit für die interactive-Einschätzung als Zahl zwischen 0 und 1.',
             '- case_number ist eine 8-stellige Zahl, die immer mit "9" beginnt, gefolgt von den letzten zwei Ziffern des Jahres (aktuelles Jahr oder eines der zwei Vorjahre) – sie beginnt also mit "' . $prefixList . '" (Beispiele: "' . $casePrefixes[0] . '01234", "' . $casePrefixes[1] . '01234"). Ignoriere Zahlen, die nicht diesem Muster entsprechen.',
         ];
 

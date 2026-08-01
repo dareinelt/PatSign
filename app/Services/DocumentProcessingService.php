@@ -8,6 +8,7 @@ use App\Repositories\AnalysisRunRepository;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\NotificationRepository;
+use App\Services\Forms\FormAnalysisService;
 
 /**
  * Führt die KI-Analyse eines importierten Dokuments aus (typischerweise im
@@ -24,7 +25,9 @@ final class DocumentProcessingService
         private readonly NotificationRepository $notifications,
         private readonly AuditLogRepository $auditLogs,
         private readonly ClearingService $clearing,
-        private readonly AnalysisRunRepository $analysisRuns
+        private readonly AnalysisRunRepository $analysisRuns,
+        private readonly FormAnalysisService $formAnalysis,
+        private readonly SettingsService $settings
     ) {}
 
     public function process(int $documentId): void
@@ -94,6 +97,10 @@ final class DocumentProcessingService
         ]);
         $this->auditLog('document_analyzed', ['file' => $fileName], $documentId);
 
+        // Formular-Erkennung: interaktive Dokumente (Anamnesebogen, Fragebogen …)
+        // werden gekennzeichnet und anschließend im Detail analysiert.
+        $this->handleFormDetection($documentId, $fileName, $result);
+
         // Clearing-Prüfung: unklare Ergebnisse werden nicht verworfen,
         // sondern zur manuellen Bearbeitung gesammelt.
         $confidence = $this->clearing->extractConfidence($result);
@@ -116,6 +123,38 @@ final class DocumentProcessingService
             $details !== [] ? implode(' · ', $details) : 'Das Dokument wurde erfolgreich analysiert.',
             $documentId
         );
+    }
+
+    /**
+     * Kennzeichnet interaktive Dokumente und startet die Formularanalyse
+     * (AcroForms haben Vorrang, sonst Vision-KI).
+     *
+     * @param array<string,mixed> $result
+     */
+    private function handleFormDetection(int $documentId, string $fileName, array $result): void
+    {
+        if (!$this->settings->getBool('forms.analysis_enabled', true)) {
+            return;
+        }
+
+        $interactive = filter_var($result['interactive'] ?? false, FILTER_VALIDATE_BOOL);
+        if (!$interactive) {
+            return;
+        }
+
+        $confidence = isset($result['confidence']) && is_numeric($result['confidence']) ? (float) $result['confidence'] : null;
+        $this->documents->updateFormStatus($documentId, 'detected', true);
+        $this->auditLog('form_detected', ['file' => $fileName, 'confidence' => $confidence], $documentId);
+
+        try {
+            $this->formAnalysis->analyzeDocument($documentId);
+            $this->documents->updateFormStatus($documentId, 'analyzed');
+        } catch (\Throwable $e) {
+            // Formularanalyse-Fehler stoppen den Signaturprozess nicht:
+            // das Dokument bleibt als normales Dokument nutzbar.
+            $this->documents->updateFormStatus($documentId, 'error', false);
+            $this->notify('warning', 'Formularanalyse fehlgeschlagen: ' . $fileName, $e->getMessage(), $documentId);
+        }
     }
 
     /**
