@@ -24,6 +24,7 @@ final class AdminController extends BaseController
     /** @var array<string,string> */
     private const SECTIONS = [
         'general' => 'Allgemein',
+        'completion-page' => 'Abschlussseite',
         'ai' => 'KI',
         'document-types' => 'Dokumenttypen',
         'import' => 'Import',
@@ -334,9 +335,18 @@ final class AdminController extends BaseController
         return match ($section) {
             'general' => [
                 'clinic_name' => 'general.clinic_name',
+                'clinic_location' => 'general.clinic_location',
                 'logo_text' => 'general.logo_text',
                 'primary_color' => 'general.primary_color',
                 'accent_color' => 'general.accent_color',
+            ],
+            'completion-page' => [
+                'header_template' => 'completion.header_template',
+                'body_template' => 'completion.body_template',
+                'email_consent_template' => 'completion.email_consent_template',
+                'email_no_consent_template' => 'completion.email_no_consent_template',
+                'signed_statement' => 'completion.signed_statement',
+                'footer_template' => 'completion.footer_template',
             ],
             'ai' => [
                 'vision_host' => 'ai.vision.host',

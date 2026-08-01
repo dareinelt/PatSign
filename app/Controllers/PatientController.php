@@ -11,6 +11,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\SignatureRepository;
 use App\Security\CsrfTokenManager;
+use App\Services\CompletionPageService;
 use App\Services\MailService;
 use App\Services\SettingsService;
 use App\Services\SignatureService;
@@ -26,6 +27,7 @@ final class PatientController extends BaseController
         private readonly DocumentRepository $documents,
         private readonly SignatureRepository $signatures,
         private readonly SignatureService $signatureService,
+        private readonly CompletionPageService $completionPage,
         private readonly AuditLogRepository $auditLogs,
         private readonly SettingsService $settings,
         private readonly MailService $mail,
@@ -137,10 +139,29 @@ final class PatientController extends BaseController
                 'document_type' => (string) ($document['document_type'] ?? 'Unbekannt'),
             ]);
 
+            // Abschlussseite erzeugen und an das Dokument anhängen.
+            $paths = [
+                'signed_pdf_path' => $exportPath . '/' . $finalName,
+                'completion_page_path' => $exportPath . '/' . $finalName,
+            ];
+            try {
+                $paths = $this->completionPage->appendToDocument($document, [
+                    'signature_data' => $signatureData,
+                    'email_consent' => $emailConsent,
+                    'email' => $emailConsent ? $email : '',
+                    'operator' => $operator,
+                    'started_at' => (int) ($session['started_at'] ?? 0),
+                    'signed_at' => $signedAt,
+                    'final_name' => $finalName,
+                ]);
+            } catch (\Throwable $e) {
+                $this->audit('completion_page_error', ['document_id' => (int) $document['id'], 'error' => $e->getMessage()]);
+            }
+
             $this->signatures->create([
                 'document_id' => (int) $document['id'],
-                'completion_page_path' => $exportPath . '/' . $finalName,
-                'signed_pdf_path' => $exportPath . '/' . $finalName,
+                'completion_page_path' => $paths['completion_page_path'],
+                'signed_pdf_path' => $paths['signed_pdf_path'],
                 'consent_email' => (int) $emailConsent,
                 'email_address' => $emailConsent ? $email : null,
                 'signed_at' => $signedAt,
