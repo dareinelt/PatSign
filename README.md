@@ -17,6 +17,7 @@ phpMyAdmin (Dev): `http://localhost:8081`
 
 ## Default-Admin
 
+- Wird beim ersten Start automatisch angelegt, falls noch nicht vorhanden.
 - Benutzername: `admin`
 - Passwort: `admin`
 

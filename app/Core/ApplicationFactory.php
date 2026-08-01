@@ -55,6 +55,8 @@ final class ApplicationFactory
             (array) $c->get(Config::class)->get('app.allowed_upload_mime')
         ));
 
+        self::ensureDefaultAdmin($container->get(\PDO::class), $container->get(PasswordHasher::class));
+
         $session = new SessionManager($container->get(Config::class));
         $session->start();
 
@@ -82,5 +84,42 @@ final class ApplicationFactory
         ];
 
         return new Application($router, $middleware);
+    }
+
+    private static function ensureDefaultAdmin(\PDO $pdo, PasswordHasher $hasher): void
+    {
+        try {
+            $usersTable = $pdo->query("SHOW TABLES LIKE 'users'");
+            $rolesTable = $pdo->query("SHOW TABLES LIKE 'roles'");
+
+            if ($usersTable === false || $rolesTable === false || $usersTable->fetchColumn() === false || $rolesTable->fetchColumn() === false) {
+                return;
+            }
+
+            $adminExistsStmt = $pdo->prepare("SELECT 1 FROM users WHERE username = :username LIMIT 1");
+            $adminExistsStmt->execute(['username' => 'admin']);
+            if ($adminExistsStmt->fetchColumn() !== false) {
+                return;
+            }
+
+            $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE name = :name LIMIT 1");
+            $roleStmt->execute(['name' => 'admin']);
+            $roleId = $roleStmt->fetchColumn();
+
+            if ($roleId === false) {
+                $insertRoleStmt = $pdo->prepare("INSERT INTO roles (name) VALUES (:name)");
+                $insertRoleStmt->execute(['name' => 'admin']);
+                $roleId = $pdo->lastInsertId();
+            }
+
+            $insertUserStmt = $pdo->prepare('INSERT INTO users (username, password_hash, role_id, is_active) VALUES (:username, :password_hash, :role_id, 1)');
+            $insertUserStmt->execute([
+                'username' => 'admin',
+                'password_hash' => $hasher->hash('admin'),
+                'role_id' => (int) $roleId,
+            ]);
+        } catch (\Throwable) {
+            // Ignore bootstrap auto-seeding errors and continue normal startup.
+        }
     }
 }
