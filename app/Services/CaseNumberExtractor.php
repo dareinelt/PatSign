@@ -27,8 +27,11 @@ final class CaseNumberExtractor
         arsort($scored);
         $best = array_key_first($scored);
 
+        // PHP wandelt numerische String-Keys in Integer um – für den
+        // nachgelagerten is_string()-Check muss die Fallnummer wieder
+        // als String zurückgegeben werden.
         return [
-            'case_number' => $best,
+            'case_number' => $best !== null ? (string) $best : null,
             'confidence' => $best !== null ? $scored[$best] : 0.0,
             'candidates' => $candidates,
         ];
