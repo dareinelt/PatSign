@@ -27,6 +27,7 @@ use App\Services\CaseNumberExtractor;
 use App\Services\DocumentAnalysisService;
 use App\Services\LocalAiClient;
 use App\Services\MailService;
+use App\Services\NetworkShareService;
 use App\Services\PdfImportService;
 use App\Services\PromptService;
 use App\Services\SettingsService;
@@ -55,8 +56,9 @@ final class ApplicationFactory
         $container->singleton(AuditLogRepository::class, fn (Container $c) => new AuditLogRepository($c->get(\PDO::class)));
         $container->singleton(SystemSettingRepository::class, fn (Container $c) => new SystemSettingRepository($c->get(\PDO::class)));
         $container->singleton(SettingsService::class, fn (Container $c) => new SettingsService($c->get(SystemSettingRepository::class), $c->get(Config::class)));
-        $container->singleton(SystemStatusService::class, fn (Container $c) => new SystemStatusService($c->get(\PDO::class), $c->get(SettingsService::class)));
+        $container->singleton(SystemStatusService::class, fn (Container $c) => new SystemStatusService($c->get(\PDO::class), $c->get(SettingsService::class), $c->get(NetworkShareService::class)));
         $container->singleton(MailService::class, fn (Container $c) => new MailService($c->get(SettingsService::class)));
+        $container->singleton(NetworkShareService::class, fn () => new NetworkShareService());
         $container->singleton(PromptService::class, fn (Container $c) => new PromptService($c->get(PromptRepository::class)));
         $container->singleton(AuthService::class, fn (Container $c) => new AuthService($c->get(UserRepository::class), $c->get(PasswordHasher::class)));
         $container->singleton(CaseNumberExtractor::class, fn () => new CaseNumberExtractor());
@@ -73,7 +75,13 @@ final class ApplicationFactory
         $container->singleton(PdfImportService::class, fn (Container $c) => new PdfImportService(
             $c->get(SettingsService::class)->getString('app.import_watch_path'),
             (int) $c->get(Config::class)->get('app.max_upload_bytes'),
-            (array) $c->get(Config::class)->get('app.allowed_upload_mime')
+            (array) $c->get(Config::class)->get('app.allowed_upload_mime'),
+            $c->get(NetworkShareService::class),
+            [
+                'domain' => $c->get(SettingsService::class)->getString('import.share_domain'),
+                'username' => $c->get(SettingsService::class)->getString('import.share_username'),
+                'password' => $c->get(SettingsService::class)->getString('import.share_password'),
+            ]
         ));
 
         self::ensureDefaultAdmin($container->get(\PDO::class), $container->get(PasswordHasher::class));
@@ -99,6 +107,7 @@ final class ApplicationFactory
             $container->get(RoleRepository::class),
             $container->get(PasswordHasher::class),
             $container->get(MailService::class),
+            $container->get(NetworkShareService::class),
             $container->get(CsrfTokenManager::class)
         );
         $dashboardController = new DashboardController(

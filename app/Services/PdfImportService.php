@@ -8,12 +8,31 @@ use RuntimeException;
 
 final class PdfImportService
 {
-    /** @param array<int,string> $allowedMimeTypes */
+    /**
+     * @param array<int,string> $allowedMimeTypes
+     * @param array{domain:string,username:string,password:string}|null $shareCredentials
+     */
     public function __construct(
         private readonly string $importPath,
         private readonly int $maxUploadBytes,
-        private readonly array $allowedMimeTypes
+        private readonly array $allowedMimeTypes,
+        private readonly ?NetworkShareService $networkShare = null,
+        private readonly ?array $shareCredentials = null
     ) {}
+
+    private function connectShare(): void
+    {
+        if ($this->networkShare === null) {
+            return;
+        }
+
+        $this->networkShare->ensureConnection(
+            $this->importPath,
+            $this->shareCredentials['domain'] ?? '',
+            $this->shareCredentials['username'] ?? '',
+            $this->shareCredentials['password'] ?? ''
+        );
+    }
 
     public function importUpload(array $file): string
     {
@@ -32,6 +51,7 @@ final class PdfImportService
         }
 
         $target = rtrim($this->importPath, '/') . '/' . basename((string) ($file['name'] ?? uniqid('upload_', true) . '.pdf'));
+        $this->connectShare();
         if (!move_uploaded_file($tmpFile, $target)) {
             throw new RuntimeException('Datei konnte nicht gespeichert werden.');
         }
@@ -42,6 +62,7 @@ final class PdfImportService
     /** @return array<int,string> */
     public function importFromWatchFolder(): array
     {
+        $this->connectShare();
         $files = glob(rtrim($this->importPath, '/') . '/*.pdf') ?: [];
         return array_values($files);
     }

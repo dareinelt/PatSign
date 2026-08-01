@@ -14,6 +14,7 @@ use App\Security\CsrfTokenManager;
 use App\Security\PasswordHasher;
 use App\Services\LocalAiClient;
 use App\Services\MailService;
+use App\Services\NetworkShareService;
 use App\Services\PromptService;
 use App\Services\SettingsService;
 
@@ -42,6 +43,7 @@ final class AdminController extends BaseController
         private readonly RoleRepository $roles,
         private readonly PasswordHasher $hasher,
         private readonly MailService $mail,
+        private readonly NetworkShareService $networkShare,
         private readonly CsrfTokenManager $csrf
     ) {
         parent::__construct($view);
@@ -145,6 +147,21 @@ final class AdminController extends BaseController
     {
         try {
             return $this->json($this->aiClientFromRequest($request)->testConnection());
+        } catch (\Throwable $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+    }
+
+    /** Zugriff auf ein Netzwerkverzeichnis (Import/Export) testen (AJAX). */
+    public function testNetworkShare(Request $request): Response
+    {
+        try {
+            return $this->json($this->networkShare->testConnection(
+                trim((string) $request->input('path')),
+                trim((string) $request->input('domain', '')),
+                trim((string) $request->input('username', '')),
+                (string) $request->input('password', '')
+            ));
         } catch (\Throwable $e) {
             return $this->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
@@ -292,10 +309,16 @@ final class AdminController extends BaseController
             ],
             'import' => [
                 'import_path' => 'app.import_watch_path',
+                'import_domain' => 'import.share_domain',
+                'import_username' => 'import.share_username',
+                'import_password' => 'import.share_password',
                 'polling_interval' => 'import.polling_interval',
             ],
             'export' => [
                 'network_share' => 'app.network_share_path',
+                'export_domain' => 'export.share_domain',
+                'export_username' => 'export.share_username',
+                'export_password' => 'export.share_password',
                 'file_naming' => 'export.file_naming',
             ],
             'smtp' => [

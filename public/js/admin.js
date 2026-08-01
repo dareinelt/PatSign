@@ -169,6 +169,63 @@
             });
         });
     }
+    // Import/Export: Zugriffstest für Netzwerkfreigaben
+    const shareSettings = document.querySelector("[data-share-settings]");
+    if (shareSettings) {
+        const shareCsrf = shareSettings.getAttribute("data-csrf");
+
+        document.querySelectorAll("[data-share-test]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const type = button.getAttribute("data-share-test");
+                const status = document.querySelector('[data-share-test-status="' + type + '"]');
+
+                function value(field) {
+                    const input = document.getElementById(type + "-" + field);
+                    return input ? input.value : "";
+                }
+
+                const params = new URLSearchParams();
+                params.set("_csrf", shareCsrf);
+                params.set("path", value("path").trim());
+                params.set("domain", value("domain").trim());
+                params.set("username", value("username").trim());
+                params.set("password", value("password"));
+
+                button.disabled = true;
+                if (status) {
+                    status.textContent = "Teste Zugriff …";
+                    status.style.color = "";
+                }
+
+                fetch("/admin/share/test", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: params.toString()
+                })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        const success = data.success === true;
+                        if (status) {
+                            status.textContent = data.message || (success ? "Zugriff erfolgreich." : "Test fehlgeschlagen.");
+                            status.style.color = success ? "var(--color-success, #15803d)" : "var(--color-danger, #b91c1c)";
+                        }
+                        if (window.PatSignUI) {
+                            window.PatSignUI.toast(status ? status.textContent : "", success ? "success" : "error");
+                        }
+                    })
+                    .catch(function (error) {
+                        if (status) {
+                            status.textContent = "Test fehlgeschlagen: " + error.message;
+                            status.style.color = "var(--color-danger, #b91c1c)";
+                        }
+                    })
+                    .finally(function () {
+                        button.disabled = false;
+                    });
+            });
+        });
+    }
+
     // Analyse-Prompt: aktiven Prompt des gewählten Typs als Vorlage ins Textfeld laden
     const promptForm = document.querySelector("[data-prompt-form]");
     if (promptForm) {
