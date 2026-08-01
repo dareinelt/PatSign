@@ -158,7 +158,11 @@
                         body: body.toString()
                     });
                 }).then(function (response) {
-                    return response.json().then(function (data) {
+                    // Nicht-JSON-Antworten (z. B. Fehlerseiten) abfangen, damit
+                    // eine verständliche Meldung statt eines Parserfehlers erscheint.
+                    return response.json().catch(function () {
+                        return { error: "Serverfehler (HTTP " + response.status + "). Bitte erneut versuchen." };
+                    }).then(function (data) {
                         return { ok: response.ok, data: data };
                     });
                 }).then(function (result) {

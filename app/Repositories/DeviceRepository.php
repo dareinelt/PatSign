@@ -40,8 +40,15 @@ final class DeviceRepository
 
     public function nameExists(string $name, ?int $excludeId = null): bool
     {
-        $stmt = $this->pdo->prepare('SELECT id FROM devices WHERE name = :name AND (:exclude IS NULL OR id <> :exclude) LIMIT 1');
-        $stmt->execute(['name' => $name, 'exclude' => $excludeId]);
+        // Hinweis: Bei nativen Prepares (ATTR_EMULATE_PREPARES=false) darf ein
+        // benannter Platzhalter nicht mehrfach im Statement vorkommen.
+        if ($excludeId === null) {
+            $stmt = $this->pdo->prepare('SELECT id FROM devices WHERE name = :name LIMIT 1');
+            $stmt->execute(['name' => $name]);
+        } else {
+            $stmt = $this->pdo->prepare('SELECT id FROM devices WHERE name = :name AND id <> :exclude LIMIT 1');
+            $stmt->execute(['name' => $name, 'exclude' => $excludeId]);
+        }
 
         return $stmt->fetchColumn() !== false;
     }
