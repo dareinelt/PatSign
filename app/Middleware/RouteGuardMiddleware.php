@@ -26,6 +26,12 @@ final class RouteGuardMiddleware
             return $next($request);
         }
 
+        // Kioskpfade: kein Personal-Login nötig – die Geräteauthentifizierung
+        // (Geräte-ID + Token) wird im KioskController serverseitig erzwungen.
+        if ($path === '/kiosk' || str_starts_with($path, '/kiosk/')) {
+            return $next($request);
+        }
+
         if (str_starts_with($path, '/patient')) {
             if (!isset($_SESSION['patient_session']) || !is_array($_SESSION['patient_session'])) {
                 return Response::redirect('/login');

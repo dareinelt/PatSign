@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
+use App\Controllers\KioskController;
 use App\Controllers\PatientController;
 use App\Core\Request;
 use App\Core\Router;
@@ -16,7 +18,9 @@ return static function (
     DocumentController $documents,
     AdminController $admin,
     DashboardController $dashboard,
-    PatientController $patient
+    PatientController $patient,
+    KioskController $kiosk,
+    DeviceController $devices
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
@@ -42,11 +46,26 @@ return static function (
     $router->post('/patient/sign', static fn (Request $request) => $patient->sign($request));
     $router->post('/patient/exit', static fn () => $patient->exit());
 
+    // Kioskmodus (registrierte Signaturgeräte, Geräteauth im Controller)
+    $router->get('/kiosk', static fn (Request $request) => $kiosk->index($request));
+    $router->post('/kiosk/register', static fn (Request $request) => $kiosk->register($request));
+    $router->post('/kiosk/reconnect', static fn (Request $request) => $kiosk->reconnect($request));
+    $router->get('/kiosk/state', static fn (Request $request) => $kiosk->state($request));
+    $router->get('/kiosk/poll', static fn (Request $request) => $kiosk->poll($request));
+    $router->post('/kiosk/heartbeat', static fn (Request $request) => $kiosk->heartbeat($request));
+    $router->get('/kiosk/document', static fn (Request $request) => $kiosk->document($request));
+    $router->post('/kiosk/sign', static fn (Request $request) => $kiosk->sign($request));
+
+    // Geräte (medizinisches Personal)
+    $router->get('/devices/overview', static fn () => $devices->overview());
+    $router->post('/devices/assign', static fn (Request $request) => $devices->assign($request));
+
     // Administration
     $router->get('/admin', static fn () => \App\Core\Response::redirect('/admin/general'));
-    foreach (['general', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'users', 'roles', 'system'] as $section) {
+    foreach (['general', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'users', 'roles', 'devices', 'system'] as $section) {
         $router->get('/admin/' . $section, static fn () => $admin->section($section));
     }
+    $router->post('/admin/devices', static fn (Request $request) => $admin->deviceAction($request));
     $router->post('/admin/settings', static fn (Request $request) => $admin->saveSettings($request));
     $router->post('/admin/smtp/test', static fn (Request $request) => $admin->sendTestMail($request));
     $router->post('/admin/ai/models', static fn (Request $request) => $admin->fetchAiModels($request));

@@ -16,12 +16,14 @@ final class Request
         /** @var array<string,mixed> */
         private readonly array $files,
         /** @var array<string,mixed> */
-        private readonly array $session
+        private readonly array $session,
+        /** @var array<string,mixed> */
+        private readonly array $cookies = []
     ) {}
 
     public static function capture(): self
     {
-        return new self($_SERVER, $_GET, $_POST, $_FILES, $_SESSION ?? []);
+        return new self($_SERVER, $_GET, $_POST, $_FILES, $_SESSION ?? [], $_COOKIE ?? []);
     }
 
     public function method(): string
@@ -57,5 +59,26 @@ final class Request
     public function session(): array
     {
         return $this->session;
+    }
+
+    /** Liest einen HTTP-Request-Header (z. B. "X-Device-Token"). */
+    public function header(string $name, ?string $default = null): ?string
+    {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        $value = $this->server[$key] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : $default;
+    }
+
+    public function cookie(string $name, ?string $default = null): ?string
+    {
+        $value = $this->cookies[$name] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : $default;
+    }
+
+    public function ip(): string
+    {
+        return (string) ($this->server['REMOTE_ADDR'] ?? '');
     }
 }

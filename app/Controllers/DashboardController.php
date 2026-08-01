@@ -10,6 +10,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\DocumentRepository;
 use App\Core\Request;
 use App\Security\CsrfTokenManager;
+use App\Services\DeviceService;
 use App\Services\SettingsService;
 use App\Services\SystemStatusService;
 
@@ -21,6 +22,7 @@ final class DashboardController extends BaseController
         private readonly AuditLogRepository $auditLogs,
         private readonly SystemStatusService $systemStatus,
         private readonly SettingsService $settings,
+        private readonly DeviceService $devices,
         private readonly CsrfTokenManager $csrf
     ) {
         parent::__construct($view);
@@ -35,6 +37,7 @@ final class DashboardController extends BaseController
             'waitingPatients' => $this->safeCall(fn () => $this->documents->waitingPatients()),
             'statusCounts' => $this->safeCall(fn () => $this->documents->countsByStatus()),
             'activities' => $this->safeCall(fn () => $this->auditLogs->latest(15)),
+            'devices' => $this->safeCall(fn () => $this->devices->overview()),
             'systemChecks' => $this->systemStatus->checkAll(),
         ]);
     }
