@@ -26,4 +26,71 @@ final class DocumentRepository
 
         return is_array($row) ? $row : null;
     }
+
+    /** @return array<string,int> */
+    public function countsByStatus(): array
+    {
+        $rows = $this->pdo->query('SELECT status, COUNT(*) FROM documents GROUP BY status')->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+
+        return array_map('intval', $rows);
+    }
+
+    /**
+     * Patienten mit offenen (nicht signierten/versendeten) Dokumenten, gruppiert nach Fallnummer.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function waitingPatients(int $limit = 25): array
+    {
+        $sql = "SELECT case_number, MAX(last_name) AS last_name, MAX(first_name) AS first_name,
+                       COUNT(*) AS document_count,
+                       SUM(status IN ('signed','sent','archived')) AS done_count,
+                       SUM(status = 'error') AS error_count,
+                       SUM(status IN ('ready','analyzed')) AS ready_count,
+                       MAX(updated_at) AS updated_at
+                FROM documents
+                WHERE case_number IS NOT NULL
+                GROUP BY case_number
+                HAVING done_count < document_count
+                ORDER BY updated_at DESC
+                LIMIT :limit";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function search(string $term, int $limit = 25): array
+    {
+        $like = '%' . $term . '%';
+        $sql = 'SELECT id, document_id, document_type, case_number, first_name, last_name, status, created_at
+                FROM documents
+                WHERE case_number LIKE :c OR first_name LIKE :f OR last_name LIKE :l
+                ORDER BY updated_at DESC
+                LIMIT :limit';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue('c', $like);
+        $stmt->bindValue('f', $like);
+        $stmt->bindValue('l', $like);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function findByCaseNumber(string $caseNumber): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE case_number = :case_number ORDER BY created_at');
+        $stmt->execute(['case_number' => $caseNumber]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function updateStatus(int $id, string $status): void
+    {
+        $this->pdo->prepare('UPDATE documents SET status = :status WHERE id = :id')->execute(['status' => $status, 'id' => $id]);
+    }
 }

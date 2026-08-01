@@ -6,10 +6,19 @@ namespace App\Core;
 
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;
+use App\Controllers\DashboardController;
 use App\Controllers\DocumentController;
+use App\Controllers\PatientController;
 use App\Middleware\CsrfMiddleware;
+use App\Middleware\RouteGuardMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
+use App\Repositories\AuditLogRepository;
+use App\Repositories\DocumentRepository;
+use App\Repositories\DocumentTypeRepository;
 use App\Repositories\PromptRepository;
+use App\Repositories\RoleRepository;
+use App\Repositories\SignatureRepository;
+use App\Repositories\SystemSettingRepository;
 use App\Repositories\UserRepository;
 use App\Security\CsrfTokenManager;
 use App\Security\PasswordHasher;
@@ -17,9 +26,12 @@ use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
 use App\Services\DocumentAnalysisService;
 use App\Services\LocalAiClient;
+use App\Services\MailService;
 use App\Services\PdfImportService;
 use App\Services\PromptService;
+use App\Services\SettingsService;
 use App\Services\SignatureService;
+use App\Services\SystemStatusService;
 use App\Support\FilenameNormalizer;
 
 final class ApplicationFactory
@@ -36,13 +48,22 @@ final class ApplicationFactory
         $container->singleton(PasswordHasher::class, fn () => new PasswordHasher());
         $container->singleton(UserRepository::class, fn (Container $c) => new UserRepository($c->get(\PDO::class)));
         $container->singleton(PromptRepository::class, fn (Container $c) => new PromptRepository($c->get(\PDO::class)));
+        $container->singleton(DocumentRepository::class, fn (Container $c) => new DocumentRepository($c->get(\PDO::class)));
+        $container->singleton(DocumentTypeRepository::class, fn (Container $c) => new DocumentTypeRepository($c->get(\PDO::class)));
+        $container->singleton(RoleRepository::class, fn (Container $c) => new RoleRepository($c->get(\PDO::class)));
+        $container->singleton(SignatureRepository::class, fn (Container $c) => new SignatureRepository($c->get(\PDO::class)));
+        $container->singleton(AuditLogRepository::class, fn (Container $c) => new AuditLogRepository($c->get(\PDO::class)));
+        $container->singleton(SystemSettingRepository::class, fn (Container $c) => new SystemSettingRepository($c->get(\PDO::class)));
+        $container->singleton(SettingsService::class, fn (Container $c) => new SettingsService($c->get(SystemSettingRepository::class), $c->get(Config::class)));
+        $container->singleton(SystemStatusService::class, fn (Container $c) => new SystemStatusService($c->get(\PDO::class), $c->get(SettingsService::class)));
+        $container->singleton(MailService::class, fn (Container $c) => new MailService($c->get(SettingsService::class)));
         $container->singleton(PromptService::class, fn (Container $c) => new PromptService($c->get(PromptRepository::class)));
         $container->singleton(AuthService::class, fn (Container $c) => new AuthService($c->get(UserRepository::class), $c->get(PasswordHasher::class)));
         $container->singleton(CaseNumberExtractor::class, fn () => new CaseNumberExtractor());
         $container->singleton(FilenameNormalizer::class, fn () => new FilenameNormalizer());
         $container->singleton(SignatureService::class, fn (Container $c) => new SignatureService($c->get(FilenameNormalizer::class)));
-        $container->singleton(LocalAiClient::class . '.vision', fn (Container $c) => new LocalAiClient((array) $c->get(Config::class)->get('ai.vision')));
-        $container->singleton(LocalAiClient::class . '.analysis', fn (Container $c) => new LocalAiClient((array) $c->get(Config::class)->get('ai.analysis')));
+        $container->singleton(LocalAiClient::class . '.vision', fn (Container $c) => new LocalAiClient(self::aiConfig($c->get(SettingsService::class), 'vision')));
+        $container->singleton(LocalAiClient::class . '.analysis', fn (Container $c) => new LocalAiClient(self::aiConfig($c->get(SettingsService::class), 'analysis')));
         $container->singleton(DocumentAnalysisService::class, fn (Container $c) => new DocumentAnalysisService(
             $c->get(LocalAiClient::class . '.vision'),
             $c->get(LocalAiClient::class . '.analysis'),
@@ -50,7 +71,7 @@ final class ApplicationFactory
             $c->get(CaseNumberExtractor::class)
         ));
         $container->singleton(PdfImportService::class, fn (Container $c) => new PdfImportService(
-            (string) $c->get(Config::class)->get('app.import_watch_path'),
+            $c->get(SettingsService::class)->getString('app.import_watch_path'),
             (int) $c->get(Config::class)->get('app.max_upload_bytes'),
             (array) $c->get(Config::class)->get('app.allowed_upload_mime')
         ));
@@ -72,19 +93,55 @@ final class ApplicationFactory
         $adminController = new AdminController(
             $container->get(View::class),
             $container->get(PromptService::class),
-            $container->get(Config::class),
+            $container->get(SettingsService::class),
+            $container->get(DocumentTypeRepository::class),
+            $container->get(UserRepository::class),
+            $container->get(RoleRepository::class),
+            $container->get(PasswordHasher::class),
+            $container->get(MailService::class),
+            $container->get(CsrfTokenManager::class)
+        );
+        $dashboardController = new DashboardController(
+            $container->get(View::class),
+            $container->get(DocumentRepository::class),
+            $container->get(AuditLogRepository::class),
+            $container->get(SystemStatusService::class),
+            $container->get(SettingsService::class),
+            $container->get(CsrfTokenManager::class)
+        );
+        $patientController = new PatientController(
+            $container->get(View::class),
+            $container->get(DocumentRepository::class),
+            $container->get(SignatureRepository::class),
+            $container->get(SignatureService::class),
+            $container->get(AuditLogRepository::class),
+            $container->get(SettingsService::class),
+            $container->get(MailService::class),
             $container->get(CsrfTokenManager::class)
         );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),
+            new RouteGuardMiddleware(),
             new CsrfMiddleware($container->get(CsrfTokenManager::class)),
         ];
 
         return new Application($router, $middleware);
+    }
+
+    /** @return array<string,mixed> */
+    private static function aiConfig(SettingsService $settings, string $type): array
+    {
+        return [
+            'host' => $settings->getString('ai.' . $type . '.host'),
+            'port' => $settings->getInt('ai.' . $type . '.port'),
+            'api_key' => $settings->getString('ai.' . $type . '.api_key'),
+            'model' => $settings->getString('ai.' . $type . '.model'),
+            'timeout' => $settings->getInt('ai.' . $type . '.timeout', 60),
+        ];
     }
 
     private static function ensureDefaultAdmin(\PDO $pdo, PasswordHasher $hasher): void

@@ -1,0 +1,95 @@
+/* Dashboard für medizinisches Personal */
+.dashboard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+@media (max-width: 1000px) {
+    .quick-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Aktivitäten-Zeitachse */
+.timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.timeline::before {
+    content: "";
+    position: absolute;
+    left: 9px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--color-border);
+}
+
+.timeline li {
+    position: relative;
+    padding: var(--space-2) 0 var(--space-2) var(--space-6);
+    min-height: var(--touch-target);
+}
+
+.timeline .timeline-dot {
+    position: absolute;
+    left: 2px;
+    top: 14px;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    border: 3px solid var(--color-surface);
+    box-shadow: 0 0 0 2px var(--color-border);
+}
+
+.timeline .is-error .timeline-dot {
+    background: var(--color-danger);
+}
+
+.timeline .timeline-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+/* Wartende Patienten */
+.patient-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border);
+    min-height: var(--touch-target-lg);
+}
+
+.patient-row:last-child {
+    border-bottom: none;
+}
+
+.patient-row .patient-name {
+    font-weight: var(--font-weight-semibold);
+}
+
+.patient-row .patient-meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.patient-row .patient-actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--space-2);
+}

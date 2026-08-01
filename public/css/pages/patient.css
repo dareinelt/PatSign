@@ -1,0 +1,275 @@
+/* Patientenmodus: Vollbild-Wizard ohne Navigation */
+.patient-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+}
+
+.patient-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.patient-header .clinic-name {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+}
+
+.patient-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.wizard-step {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    animation: step-in var(--duration-normal) var(--ease-standard);
+}
+
+.wizard-step.is-active {
+    display: flex;
+}
+
+@keyframes step-in {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.wizard-title {
+    font-size: var(--font-size-2xl);
+    text-align: center;
+    margin-bottom: var(--space-2);
+}
+
+.wizard-text {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-lg);
+    max-width: 640px;
+    margin: 0 auto var(--space-5);
+}
+
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: auto;
+    padding-top: var(--space-5);
+}
+
+.wizard-nav .btn {
+    min-width: 180px;
+}
+
+/* Begrüßung / Abschluss */
+.wizard-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--space-4);
+}
+
+.wizard-hero .hero-icon {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    display: grid;
+    place-items: center;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+}
+
+.wizard-hero .hero-icon .icon {
+    width: 48px;
+    height: 48px;
+}
+
+.wizard-hero.is-success .hero-icon {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+}
+
+.wizard-hero h1 {
+    font-size: var(--font-size-3xl);
+}
+
+/* Dokumentliste */
+.doc-list {
+    list-style: none;
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.doc-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    min-height: var(--touch-target-lg);
+}
+
+.doc-list .doc-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.doc-list .doc-title {
+    font-weight: var(--font-weight-semibold);
+}
+
+.doc-list .doc-state {
+    margin-left: auto;
+}
+
+/* Dokumentanzeige */
+.doc-viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    min-height: 60vh;
+}
+
+.doc-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+    flex-wrap: wrap;
+}
+
+.doc-viewer-toolbar .doc-viewer-title {
+    font-weight: var(--font-weight-semibold);
+    margin-right: auto;
+}
+
+.doc-viewer-frame {
+    flex: 1;
+    border: none;
+    width: 100%;
+    min-height: 55vh;
+    touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* Unterschriftsfeld */
+.signature-pad-wrapper {
+    background: var(--color-surface);
+    border: 2px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    position: relative;
+    margin-bottom: var(--space-4);
+}
+
+.signature-pad-wrapper canvas {
+    width: 100%;
+    height: 260px;
+    display: block;
+    touch-action: none;
+    border-radius: var(--radius-lg);
+}
+
+.signature-pad-wrapper .signature-hint {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
+    pointer-events: none;
+    font-size: var(--font-size-lg);
+}
+
+.signature-pad-wrapper.has-signature .signature-hint {
+    display: none;
+}
+
+/* Zusammenfassung */
+.summary-list {
+    list-style: none;
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.summary-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.summary-list li:last-child {
+    border-bottom: none;
+}
+
+.summary-list .summary-label {
+    color: var(--color-text-muted);
+}
+
+.summary-list .summary-value {
+    font-weight: var(--font-weight-medium);
+    text-align: right;
+}
+
+@media (max-width: 700px) {
+    .patient-main {
+        padding: var(--space-4);
+    }
+
+    .wizard-nav {
+        flex-direction: column-reverse;
+    }
+
+    .wizard-nav .btn {
+        width: 100%;
+    }
+}
+
+/* Schmale zentrierte Inhaltsspalte im Wizard */
+.wizard-narrow {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+

@@ -1,0 +1,46 @@
+/* Typografie */
+h1,
+h2,
+h3,
+h4 {
+    margin: 0 0 var(--space-3);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-semibold);
+}
+
+h1 {
+    font-size: var(--font-size-2xl);
+}
+
+h2 {
+    font-size: var(--font-size-xl);
+}
+
+h3 {
+    font-size: var(--font-size-lg);
+}
+
+p {
+    margin: 0 0 var(--space-3);
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-sm {
+    font-size: var(--font-size-sm);
+}
+
+.text-lg {
+    font-size: var(--font-size-lg);
+}
+
+.page-title {
+    margin-bottom: var(--space-1);
+}
+
+.page-subtitle {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-5);
+}

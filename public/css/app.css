@@ -1,4 +1,23 @@
-body { font-family: Arial, sans-serif; margin: 2rem; }
-.error { color: #a10000; }
-.card { border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; }
-input, button, textarea, select { padding: 0.5rem; margin: 0.25rem 0; width: 100%; max-width: 640px; }
+/* PatSign – zentrales Stylesheet: bindet alle Module ein */
+@import url("themes/tokens.css");
+@import url("base/reset.css");
+@import url("base/typography.css");
+@import url("layout/shell.css");
+@import url("layout/grid.css");
+@import url("components/buttons.css");
+@import url("components/cards.css");
+@import url("components/forms.css");
+@import url("components/tables.css");
+@import url("components/badges.css");
+@import url("components/dialogs.css");
+@import url("components/toasts.css");
+@import url("components/progress.css");
+@import url("components/spinners.css");
+@import url("components/search.css");
+@import url("components/breadcrumbs.css");
+@import url("components/dropdowns.css");
+@import url("pages/login.css");
+@import url("pages/dashboard.css");
+@import url("pages/patient.css");
+@import url("pages/admin.css");
+@import url("utilities/utilities.css");
