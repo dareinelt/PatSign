@@ -15,6 +15,8 @@ App: `http://localhost:8080`
 Mailpit (Dev): `http://localhost:8025`  
 phpMyAdmin (Dev): `http://localhost:8081`
 
+> Für den HTTP-Quickstart sollte `SESSION_SECURE` in der `.env` nicht fest auf `true` gesetzt sein, damit der Session-Cookie übertragen und der Login-CSRF-Check erfolgreich validiert wird.
+
 ## Default-Admin
 
 - Wird beim ersten Start automatisch angelegt, falls noch nicht vorhanden.
