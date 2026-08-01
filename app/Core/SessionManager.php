@@ -31,7 +31,6 @@ final class SessionManager
 
         if (!isset($_SESSION['created_at'])) {
             $_SESSION['created_at'] = time();
-            session_regenerate_id(true);
         }
     }
 }
