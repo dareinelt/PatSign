@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Repositories\DocumentTypeRepository;
 use RuntimeException;
 
 final class DocumentAnalysisService
@@ -12,7 +13,8 @@ final class DocumentAnalysisService
         private readonly LocalAiClient $visionClient,
         private readonly LocalAiClient $analysisClient,
         private readonly PromptService $promptService,
-        private readonly CaseNumberExtractor $caseNumberExtractor
+        private readonly CaseNumberExtractor $caseNumberExtractor,
+        private readonly DocumentTypeRepository $documentTypes
     ) {}
 
     /** @return array<string,mixed> */
@@ -42,21 +44,28 @@ final class DocumentAnalysisService
         ]);
 
         $extractedText = (string) ($visionResponse['choices'][0]['message']['content'] ?? '');
-        $analysisPrompt = $this->promptService->getActivePrompt('analysis');
         $analysisModel = $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b';
         $analysisMessages = [[
             'role' => 'system',
-            'content' => $analysisPrompt,
+            'content' => $this->buildAnalysisSystemPrompt(),
         ], [
             'role' => 'user',
             'content' => $extractedText,
         ]];
 
+        $analysisRequest = [
+            'model' => $analysisModel,
+            'messages' => $analysisMessages,
+            // Deterministische, knappe Antworten ohne Kreativspielraum:
+            'temperature' => 0,
+            // Das JSON-Objekt braucht nur wenige Token – begrenzt zusätzlich
+            // ausschweifende Reasoning-/Prosa-Ausgaben lokaler Modelle.
+            'max_tokens' => 256,
+        ];
+
         try {
-            $analysisResponse = $this->analysisClient->chat([
-                'model' => $analysisModel,
+            $analysisResponse = $this->analysisClient->chat($analysisRequest + [
                 'response_format' => ['type' => 'json_object'],
-                'messages' => $analysisMessages,
             ]);
         } catch (RuntimeException $e) {
             // Manche lokalen Endpunkte (z. B. LM Studio) lehnen "response_format"
@@ -64,10 +73,7 @@ final class DocumentAnalysisService
             if ($e->getCode() < 400 || $e->getCode() >= 500) {
                 throw $e;
             }
-            $analysisResponse = $this->analysisClient->chat([
-                'model' => $analysisModel,
-                'messages' => $analysisMessages,
-            ]);
+            $analysisResponse = $this->analysisClient->chat($analysisRequest);
         }
 
         $content = (string) ($analysisResponse['choices'][0]['message']['content'] ?? '{}');
@@ -81,6 +87,40 @@ final class DocumentAnalysisService
         $structured['case_number_confidence'] = $caseNumber['confidence'];
 
         return $structured;
+    }
+
+    /**
+     * Baut den System-Prompt für das Analysemodell: konfigurierter Basis-Prompt
+     * plus harte Ausgaberegeln und die Whitelist der konfigurierten
+     * Dokumententypen, an die sich das Modell halten muss.
+     */
+    private function buildAnalysisSystemPrompt(): string
+    {
+        $basePrompt = trim($this->promptService->getActivePrompt('analysis'));
+
+        $typeNames = array_values(array_filter(array_map(
+            static fn (array $row): string => trim((string) ($row['name'] ?? '')),
+            $this->documentTypes->all()
+        )));
+
+        $casePrefix = '9' . date('y');
+        $rules = [
+            'AUSGABEREGELN (zwingend):',
+            '- Antworte mit genau einem JSON-Objekt und sonst nichts: kein Markdown, keine Code-Zäune, keine Erklärungen, keine Gedankengänge.',
+            '- Verwende exakt diese Schlüssel: document_type, case_number, last_name, first_name, birth_date.',
+            '- Wenn eine Information nicht eindeutig im Text steht, setze den Wert auf null. Erfinde nichts.',
+            '- birth_date im Format TT.MM.JJJJ.',
+            '- case_number ist eine 8-stellige Zahl, die immer mit "9" beginnt, gefolgt von den letzten zwei Ziffern des aktuellen Jahres – sie beginnt also mit "' . $casePrefix . '" (Beispiel: "' . $casePrefix . '01234"). Ignoriere Zahlen, die nicht diesem Muster entsprechen.',
+        ];
+
+        if ($typeNames !== []) {
+            $rules[] = '- document_type MUSS exakt einer der folgenden Werte sein (keine eigenen Bezeichnungen, keine Kombinationen, keine Zusätze): '
+                . implode(', ', array_map(static fn (string $n): string => '"' . $n . '"', $typeNames)) . '.';
+            $fallback = in_array('Unbekannt', $typeNames, true) ? 'Unbekannt' : $typeNames[count($typeNames) - 1];
+            $rules[] = '- Passt keiner der Werte eindeutig, verwende "' . $fallback . '".';
+        }
+
+        return $basePrompt . "\n\n" . implode("\n", $rules);
     }
 
     /**
