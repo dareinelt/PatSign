@@ -66,7 +66,8 @@ final class ApplicationFactory
             $container->get(PdfImportService::class),
             $container->get(DocumentAnalysisService::class),
             $container->get(SignatureService::class),
-            $container->get(Config::class)
+            $container->get(Config::class),
+            $container->get(CsrfTokenManager::class)
         );
         $adminController = new AdminController(
             $container->get(View::class),
