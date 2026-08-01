@@ -13,6 +13,7 @@
         <?php endif; ?>
         <form method="post" action="/login">
             <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="redirect_to_kiosk" id="login-redirect-to-kiosk" value="0">
             <div class="form-group">
                 <label for="login-username">Benutzername</label>
                 <input id="login-username" name="username" autocomplete="username" required autofocus>
