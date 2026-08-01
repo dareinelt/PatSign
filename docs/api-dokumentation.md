@@ -4,10 +4,12 @@
 - `POST /login` Anmeldung
 - `POST /logout` Abmeldung
 - `GET /documents` Dokumentenansicht
-- `POST /documents/upload` PDF-Upload
+- `POST /documents/upload` PDF-Upload (Analyse läuft asynchron im Hintergrund)
 - `GET /documents/watch` Importordner-Scan
 - `POST /documents/analyze` Vision+Analyse (lokal)
 - `POST /documents/sign` Abschlussseiten-Metadaten
+- `GET /notifications` Benachrichtigungen (JSON: `unread` + letzte 20 Einträge)
+- `POST /notifications/read` Benachrichtigung(en) als gelesen markieren (`id` optional, sonst alle)
 - `GET /admin` Administration
 - `POST /admin/share/test` Zugriffstest Netzwerkverzeichnis (Import/Export, UNC-Pfad mit optionalen Anmeldedaten)
 - `POST /admin/prompts` Prompt-Version anlegen/aktivieren

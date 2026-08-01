@@ -16,6 +16,7 @@
 @import url("components/search.css");
 @import url("components/breadcrumbs.css");
 @import url("components/dropdowns.css");
+@import url("components/notifications.css");
 @import url("pages/login.css");
 @import url("pages/dashboard.css");
 @import url("pages/patient.css");

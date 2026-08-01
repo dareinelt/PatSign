@@ -10,6 +10,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
 use App\Controllers\KioskController;
+use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RouteGuardMiddleware;
@@ -21,6 +22,7 @@ use App\Repositories\DeviceRepository;
 use App\Repositories\DeviceSessionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\DocumentTypeRepository;
+use App\Repositories\NotificationRepository;
 use App\Repositories\PromptRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\SignatureRepository;
@@ -33,6 +35,7 @@ use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
 use App\Services\DeviceService;
 use App\Services\DocumentAnalysisService;
+use App\Services\DocumentProcessingService;
 use App\Services\LocalAiClient;
 use App\Services\MailService;
 use App\Services\NetworkShareService;
@@ -45,7 +48,11 @@ use App\Support\FilenameNormalizer;
 
 final class ApplicationFactory
 {
-    public static function create(string $basePath): Application
+    /**
+     * Erstellt und konfiguriert den DI-Container.
+     * Auch für CLI-Worker (z. B. bin/process-document.php) nutzbar.
+     */
+    public static function createContainer(string $basePath): Container
     {
         Env::load($basePath . '/.env');
 
@@ -106,6 +113,21 @@ final class ApplicationFactory
             ]
         ));
 
+        $container->singleton(NotificationRepository::class, fn (Container $c) => new NotificationRepository($c->get(\PDO::class)));
+        $container->singleton(DocumentProcessingService::class, fn (Container $c) => new DocumentProcessingService(
+            $c->get(DocumentAnalysisService::class),
+            $c->get(DocumentRepository::class),
+            $c->get(NotificationRepository::class),
+            $c->get(AuditLogRepository::class)
+        ));
+
+        return $container;
+    }
+
+    public static function create(string $basePath): Application
+    {
+        $container = self::createContainer($basePath);
+
         self::ensureDefaultAdmin($container->get(\PDO::class), $container->get(PasswordHasher::class));
 
         $session = new SessionManager($container->get(Config::class));
@@ -120,7 +142,12 @@ final class ApplicationFactory
             $container->get(DocumentRepository::class),
             $container->get(AuditLogRepository::class),
             $container->get(Config::class),
-            $container->get(CsrfTokenManager::class)
+            $container->get(CsrfTokenManager::class),
+            $basePath
+        );
+        $notificationController = new NotificationController(
+            $container->get(View::class),
+            $container->get(NotificationRepository::class)
         );
         $adminController = new AdminController(
             $container->get(View::class),
@@ -171,7 +198,7 @@ final class ApplicationFactory
         );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),
