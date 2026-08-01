@@ -169,4 +169,16 @@
             });
         });
     }
+    // Analyse-Prompt: aktiven Prompt des gewählten Typs als Vorlage ins Textfeld laden
+    const promptForm = document.querySelector("[data-prompt-form]");
+    if (promptForm) {
+        const prompts = JSON.parse(promptForm.getAttribute("data-prompts") || "{}");
+        const typeSelect = promptForm.querySelector('[name="type"]');
+        const contentField = promptForm.querySelector('[name="content"]');
+        if (typeSelect && contentField) {
+            typeSelect.addEventListener("change", function () {
+                contentField.value = prompts[typeSelect.value] || "";
+            });
+        }
+    }
 })();

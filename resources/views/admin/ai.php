@@ -85,8 +85,8 @@ ob_start();
 
     <div class="card">
         <div class="card-header"><h2>Analyse-Prompt</h2></div>
-        <p class="text-muted text-sm">Neue Prompt-Version anlegen. Ältere Versionen bleiben in der Datenbank erhalten.</p>
-        <form method="post" action="/admin/prompts">
+        <p class="text-muted text-sm">Der aktive Prompt wird als Vorlage angezeigt. Beim Speichern wird eine neue Version angelegt; ältere Versionen bleiben in der Datenbank erhalten.</p>
+        <form method="post" action="/admin/prompts" data-prompt-form data-prompts="<?= e(json_encode($activePrompts ?? [], JSON_THROW_ON_ERROR)) ?>">
             <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
             <div class="form-group">
                 <label for="prompt-type">Typ</label>
@@ -97,7 +97,7 @@ ob_start();
             </div>
             <div class="form-group">
                 <label for="prompt-content">Prompt</label>
-                <textarea id="prompt-content" name="content" rows="8" required></textarea>
+                <textarea id="prompt-content" name="content" rows="8" required><?= e($activePrompts['vision'] ?? '') ?></textarea>
             </div>
             <label class="checkbox-field">
                 <input type="checkbox" name="activate" value="1" checked>
