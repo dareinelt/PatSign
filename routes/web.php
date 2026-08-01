@@ -37,6 +37,7 @@ return static function (
     $router->get('/dashboard/signed', static fn () => $dashboard->signedToday());
     $router->get('/dashboard/signed/document', static fn (Request $request) => $dashboard->signedDocument($request));
     $router->get('/dashboard/search', static fn (Request $request) => $dashboard->search($request));
+    $router->get('/dashboard/folders', static fn () => $dashboard->folders());
 
     // Dokumente
     $router->get('/documents', static fn () => $documents->index());

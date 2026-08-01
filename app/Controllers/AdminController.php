@@ -378,6 +378,7 @@ final class AdminController extends BaseController
                 'logo_text' => 'general.logo_text',
                 'primary_color' => 'general.primary_color',
                 'accent_color' => 'general.accent_color',
+                'folder_overview_hours' => 'dashboard.folder_overview_hours',
             ],
             'completion-page' => [
                 'header_template' => 'completion.header_template',

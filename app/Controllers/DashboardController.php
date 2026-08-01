@@ -58,6 +58,36 @@ final class DashboardController extends BaseController
         ]);
     }
 
+    /** Patientenmappen mit offenen Unterschriften im konfigurierten Zeitraum (Overlay). */
+    public function folders(): Response
+    {
+        $hours = max(1, $this->settings->getInt('dashboard.folder_overview_hours', 24));
+        $folders = $this->safeCall(fn () => $this->documents->unsignedFolders($hours));
+
+        $caseNumbers = array_values(array_filter(array_column($folders, 'case_number')));
+        $documents = $this->safeCall(fn () => $this->documents->documentsForCaseNumbers($caseNumbers));
+
+        $byCase = [];
+        foreach ($documents as $document) {
+            $byCase[(string) $document['case_number']][] = [
+                'id' => (int) $document['id'],
+                'document_type' => (string) ($document['document_type'] ?? ''),
+                'status' => (string) $document['status'],
+                'created_at' => (string) $document['created_at'],
+            ];
+        }
+
+        foreach ($folders as &$folder) {
+            $folder['documents'] = $byCase[(string) $folder['case_number']] ?? [];
+        }
+        unset($folder);
+
+        return $this->json([
+            'periodHours' => $hours,
+            'folders' => $folders,
+        ]);
+    }
+
     /** @return array<string,mixed> */
     private function clearingStats(): array
     {

@@ -31,6 +31,11 @@ ob_start();
                 <input id="accent-color" type="color" name="accent_color" value="<?= e($settings->getString('general.accent_color', '#0e8276')) ?>">
             </div>
         </div>
+        <div class="form-group">
+            <label for="folder-overview-hours">Zeitraum Mappenübersicht (Stunden)</label>
+            <input id="folder-overview-hours" type="number" name="folder_overview_hours" min="1" max="720" value="<?= e($settings->getString('dashboard.folder_overview_hours', '24')) ?>">
+            <span class="form-hint">Zeitraum, in dem Patientenmappen mit offenen Unterschriften in der Übersicht „Patientenmappe öffnen“ angezeigt werden (Standard: 24 Stunden).</span>
+        </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Speichern</button>
         </div>

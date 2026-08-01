@@ -169,4 +169,105 @@
                 });
         });
     }
+    /* Overlay: Patientenmappen mit offenen Unterschriften */
+    const foldersButton = document.getElementById("open-folders-button");
+    const foldersList = document.getElementById("patient-folders-list");
+    const foldersPeriod = document.getElementById("patient-folders-period");
+    const foldersStartForm = document.getElementById("patient-folders-start-form");
+    const foldersStartCase = document.getElementById("patient-folders-start-case");
+    const foldersManualButton = document.getElementById("patient-folders-manual");
+
+    const documentStatusLabels = {
+        imported: "Importiert",
+        analyzing: "KI wird ausgeführt",
+        analyzed: "Zuordnung erfolgreich",
+        ready: "Bereit zur Unterschrift",
+        signed: "Unterschrieben",
+        sent: "Versendet",
+        archived: "Archiviert",
+        error: "Fehler",
+        clearing: "Clearing"
+    };
+    const signedStatuses = ["signed", "sent", "archived"];
+
+    function escapeAttr(value) {
+        return escapeHtml(value).replace(/"/g, "&quot;");
+    }
+
+    function renderFolders(data) {
+        const folders = data.folders || [];
+
+        if (foldersPeriod) {
+            foldersPeriod.textContent = "Zeitraum: letzte " + (data.periodHours || 24) +
+                " Stunden · " + folders.length + " Mappe(n) mit offenen Unterschriften";
+        }
+
+        if (folders.length === 0) {
+            foldersList.innerHTML = '<p class="table-empty mb-0">Keine Patientenmappen mit offenen Unterschriften im gewählten Zeitraum.</p>';
+            return;
+        }
+
+        foldersList.innerHTML = folders.map(function (folder) {
+            const name = ((folder.last_name || "") + ", " + (folder.first_name || "")).replace(/^, |, $/g, "") || "Unbekannt";
+            const openCount = (folder.document_count || 0) - (folder.done_count || 0);
+
+            const documentsHtml = (folder.documents || []).map(function (doc) {
+                const isSigned = signedStatuses.indexOf(doc.status) !== -1;
+                const isError = doc.status === "error";
+                const badgeClass = isSigned ? "badge-success" : (isError ? "badge-danger" : "badge-warning");
+                return '<li class="folder-document">' +
+                    '<span class="folder-document-mark" aria-hidden="true">' + (isSigned ? "✓" : "○") + "</span>" +
+                    '<span class="folder-document-type">' + escapeHtml(doc.document_type || "Dokument") + "</span>" +
+                    '<span class="badge ' + badgeClass + '">' + escapeHtml(documentStatusLabels[doc.status] || doc.status) + "</span>" +
+                    "</li>";
+            }).join("");
+
+            return '<div class="patient-row folder-row">' +
+                "<div>" +
+                '<div class="patient-name">' + escapeHtml(name) + "</div>" +
+                '<div class="patient-meta">Fallnummer ' + escapeHtml(folder.case_number || "–") +
+                " · " + (folder.document_count || 0) + " Dokument(e), davon " + openCount + " offen</div>" +
+                '<ul class="folder-documents">' + documentsHtml + "</ul>" +
+                "</div>" +
+                '<div class="patient-actions">' +
+                '<button type="button" class="btn btn-primary btn-sm" data-folder-start="' + escapeAttr(folder.case_number || "") + '">Patientenmodus</button>' +
+                '<button type="button" class="btn btn-secondary btn-sm" data-send-to-device data-case-number="' + escapeAttr(folder.case_number || "") + '" data-patient-name="' + escapeAttr(name) + '">An Gerät senden</button>' +
+                "</div>" +
+                "</div>";
+        }).join("");
+    }
+
+    function loadFolders() {
+        if (!foldersList) {
+            return;
+        }
+        foldersList.innerHTML = '<p class="table-empty mb-0">Patientenmappen werden geladen …</p>';
+        fetch("/dashboard/folders", { headers: { Accept: "application/json" } })
+            .then(function (response) { return response.json(); })
+            .then(renderFolders)
+            .catch(function () {
+                foldersList.innerHTML = '<p class="table-empty mb-0">Patientenmappen konnten nicht geladen werden.</p>';
+            });
+    }
+
+    if (foldersButton) {
+        foldersButton.addEventListener("click", loadFolders);
+    }
+
+    if (foldersList && foldersStartForm && foldersStartCase) {
+        foldersList.addEventListener("click", function (event) {
+            const startTrigger = event.target.closest("[data-folder-start]");
+            if (startTrigger) {
+                foldersStartCase.value = startTrigger.getAttribute("data-folder-start") || "";
+                foldersStartForm.submit();
+            }
+        });
+    }
+
+    if (foldersManualButton) {
+        foldersManualButton.addEventListener("click", function () {
+            window.PatSignUI.closeDialog("patient-folders-dialog");
+            window.PatSignUI.openDialog("patient-start-dialog");
+        });
+    }
 })();
