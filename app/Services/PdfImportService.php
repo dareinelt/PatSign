@@ -52,11 +52,24 @@ final class PdfImportService
 
         $target = rtrim($this->importPath, '/') . '/' . basename((string) ($file['name'] ?? uniqid('upload_', true) . '.pdf'));
         $this->connectShare();
-        if (!move_uploaded_file($tmpFile, $target)) {
+        $this->ensureImportDirectory();
+        if (!@move_uploaded_file($tmpFile, $target)) {
             throw new RuntimeException('Datei konnte nicht gespeichert werden.');
         }
 
         return $target;
+    }
+
+    private function ensureImportDirectory(): void
+    {
+        $dir = rtrim($this->importPath, '/');
+        if (is_dir($dir)) {
+            return;
+        }
+
+        if (!@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('Import-Verzeichnis konnte nicht erstellt werden: ' . $dir);
+        }
     }
 
     /** @return array<int,string> */
