@@ -26,8 +26,11 @@ ob_start();
                 </div>
                 <div class="form-group">
                     <label for="vision-model">Modell</label>
-                    <input id="vision-model" name="vision_model" data-ai-field="model" list="vision-model-list" value="<?= e($settings->getString('ai.vision.model')) ?>">
-                    <datalist id="vision-model-list"></datalist>
+                    <select id="vision-model" name="vision_model" data-ai-field="model">
+                        <?php if ($settings->getString('ai.vision.model') !== ''): ?>
+                            <option value="<?= e($settings->getString('ai.vision.model')) ?>" selected><?= e($settings->getString('ai.vision.model')) ?></option>
+                        <?php endif; ?>
+                    </select>
                     <small class="text-muted text-sm" data-ai-models-status="vision"></small>
                 </div>
             </div>
@@ -58,8 +61,11 @@ ob_start();
                 </div>
                 <div class="form-group">
                     <label for="analysis-model">Modell</label>
-                    <input id="analysis-model" name="analysis_model" data-ai-field="model" list="analysis-model-list" value="<?= e($settings->getString('ai.analysis.model')) ?>">
-                    <datalist id="analysis-model-list"></datalist>
+                    <select id="analysis-model" name="analysis_model" data-ai-field="model">
+                        <?php if ($settings->getString('ai.analysis.model') !== ''): ?>
+                            <option value="<?= e($settings->getString('ai.analysis.model')) ?>" selected><?= e($settings->getString('ai.analysis.model')) ?></option>
+                        <?php endif; ?>
+                    </select>
                     <small class="text-muted text-sm" data-ai-models-status="analysis"></small>
                 </div>
             </div>
