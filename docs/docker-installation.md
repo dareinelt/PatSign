@@ -22,14 +22,16 @@ cp .env.example .env
 
 3. **`DB_PASSWORD`** – Standard-Passwort `patsign` durch ein starkes Passwort ersetzen.
 
-4. **Session-Sicherheit** – folgende Werte für den Produktivbetrieb beibehalten:
+4. **Session-Sicherheit** – für Docker-Quickstarts über `http://localhost:8080` `SESSION_SECURE` **nicht fest setzen**, damit PatSign HTTPS automatisch erkennt:
    ```
-   SESSION_SECURE=true
    SESSION_HTTP_ONLY=true
    SESSION_SAME_SITE=Strict
    ```
-   Diese Einstellungen sichern den Session-Cookie und schützen damit den CSRF-Mechanismus.  
-   `SESSION_SECURE=true` erfordert HTTPS – bei reinen HTTP-Entwicklungsumgebungen auf `false` setzen.
+   Optional explizit setzen:
+   - `SESSION_SECURE=true` für HTTPS-Deployments
+   - `SESSION_SECURE=false` für reine HTTP-Umgebungen
+
+   Diese Einstellungen sichern den Session-Cookie und schützen damit den CSRF-Mechanismus. Ein auf `true` gesetztes `SESSION_SECURE` verhindert bei reinem HTTP, dass der Session-Cookie übertragen wird; dadurch schlägt der Login mit `{"error":"CSRF-Token ungültig"}` fehl.
 
 Danach die Anwendung starten:
 
