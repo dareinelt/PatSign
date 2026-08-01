@@ -89,6 +89,18 @@ final class DocumentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /** @param array<string,mixed> $data */
+    public function updateAnalysis(int $id, array $data): void
+    {
+        $sql = 'UPDATE documents SET document_type = :document_type, case_number = :case_number,
+                       first_name = :first_name, last_name = :last_name, birth_date = :birth_date,
+                       analysis_json = :analysis_json, analysis_model = :analysis_model,
+                       analysis_duration_ms = :analysis_duration_ms, patient_key = :patient_key,
+                       status = :status
+                WHERE id = :id';
+        $this->pdo->prepare($sql)->execute($data + ['id' => $id]);
+    }
+
     public function updateStatus(int $id, string $status): void
     {
         $this->pdo->prepare('UPDATE documents SET status = :status WHERE id = :id')->execute(['status' => $status, 'id' => $id]);

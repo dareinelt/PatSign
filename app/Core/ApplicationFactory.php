@@ -117,6 +117,8 @@ final class ApplicationFactory
             $container->get(PdfImportService::class),
             $container->get(DocumentAnalysisService::class),
             $container->get(SignatureService::class),
+            $container->get(DocumentRepository::class),
+            $container->get(AuditLogRepository::class),
             $container->get(Config::class),
             $container->get(CsrfTokenManager::class)
         );
