@@ -7,6 +7,7 @@ require_once __DIR__ . '/helpers.php';
 
 $user = $user ?? [];
 $isAdmin = ($user['role'] ?? '') === 'admin';
+$canClearing = in_array($user['role'] ?? '', ['admin', 'operator'], true);
 $activeNav = $activeNav ?? '';
 $areaLabel = $areaLabel ?? 'Personalbereich';
 $clinicName = $clinicName ?? 'PatSign';
@@ -29,6 +30,13 @@ ob_start();
                 <svg class="icon" aria-hidden="true"><use href="#icon-document"/></svg>
                 Dokumente
             </a>
+            <?php if ($canClearing): ?>
+                <a href="/clearing" class="<?= $activeNav === 'clearing' ? 'is-active' : '' ?>" <?= $activeNav === 'clearing' ? 'aria-current="page"' : '' ?>>
+                    <svg class="icon" aria-hidden="true"><use href="#icon-warning"/></svg>
+                    Clearing
+                    <span class="nav-badge" id="clearing-nav-badge" hidden></span>
+                </a>
+            <?php endif; ?>
             <?php if ($isAdmin): ?>
                 <span class="sidebar-section-label">Verwaltung</span>
                 <a href="/admin" class="<?= $activeNav === 'admin' ? 'is-active' : '' ?>" <?= $activeNav === 'admin' ? 'aria-current="page"' : '' ?>>
@@ -76,5 +84,5 @@ ob_start();
 </div>
 <?php
 $content = ob_get_clean();
-$scripts = array_merge($scripts ?? [], ['/js/notifications.js']);
+$scripts = array_merge($scripts ?? [], ['/js/notifications.js', '/js/clearing-badge.js']);
 include __DIR__ . '/layout.php';

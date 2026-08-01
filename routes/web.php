@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;
+use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
@@ -22,7 +23,8 @@ return static function (
     PatientController $patient,
     KioskController $kiosk,
     DeviceController $devices,
-    NotificationController $notifications
+    NotificationController $notifications,
+    ClearingController $clearing
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
@@ -47,6 +49,21 @@ return static function (
     $router->get('/notifications', static fn () => $notifications->index());
     $router->post('/notifications/read', static fn (Request $request) => $notifications->markRead($request));
 
+    // Clearing (nicht zuordenbare Dokumente, nur berechtigtes Personal)
+    $router->get('/clearing', static fn () => $clearing->index());
+    $router->get('/clearing/data', static fn () => $clearing->data());
+    $router->get('/clearing/count', static fn () => $clearing->count());
+    $router->get('/clearing/case', static fn (Request $request) => $clearing->detail($request));
+    $router->get('/clearing/document', static fn (Request $request) => $clearing->document($request));
+    $router->get('/clearing/patients/search', static fn (Request $request) => $clearing->searchPatients($request));
+    $router->post('/clearing/update', static fn (Request $request) => $clearing->update($request));
+    $router->post('/clearing/assign', static fn (Request $request) => $clearing->assign($request));
+    $router->post('/clearing/folder', static fn (Request $request) => $clearing->createFolder($request));
+    $router->post('/clearing/case-number', static fn (Request $request) => $clearing->addCaseNumber($request));
+    $router->post('/clearing/reanalyze', static fn (Request $request) => $clearing->reanalyze($request));
+    $router->post('/clearing/complete', static fn (Request $request) => $clearing->complete($request));
+    $router->post('/clearing/archive', static fn (Request $request) => $clearing->archive($request));
+
     // Patientenmodus
     $router->post('/patient/start', static fn (Request $request) => $patient->start($request));
     $router->get('/patient', static fn () => $patient->wizard());
@@ -70,9 +87,10 @@ return static function (
 
     // Administration
     $router->get('/admin', static fn () => \App\Core\Response::redirect('/admin/general'));
-    foreach (['general', 'completion-page', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'users', 'roles', 'devices', 'system'] as $section) {
+    foreach (['general', 'completion-page', 'ai', 'document-types', 'import', 'export', 'smtp', 'logging', 'clearing', 'users', 'roles', 'devices', 'system'] as $section) {
         $router->get('/admin/' . $section, static fn () => $admin->section($section));
     }
+    $router->post('/admin/clearing-error-reasons', static fn (Request $request) => $admin->saveClearingErrorReason($request));
     $router->post('/admin/devices', static fn (Request $request) => $admin->deviceAction($request));
     $router->post('/admin/settings', static fn (Request $request) => $admin->saveSettings($request));
     $router->post('/admin/smtp/test', static fn (Request $request) => $admin->sendTestMail($request));

@@ -123,4 +123,79 @@ final class DocumentRepository
     {
         $this->pdo->prepare('UPDATE documents SET status = :status WHERE id = :id')->execute(['status' => $status, 'id' => $id]);
     }
+
+    /**
+     * Unterschiedliche Fallnummern, die zu Name + Geburtsdatum passen
+     * (zur Erkennung mehrdeutiger Treffer im Clearing).
+     *
+     * @return list<string>
+     */
+    public function distinctCaseNumbersByPatient(string $lastName, string $firstName, string $birthDate): array
+    {
+        $sql = 'SELECT DISTINCT case_number FROM documents
+                WHERE case_number IS NOT NULL
+                  AND LOWER(last_name) = LOWER(:last_name)
+                  AND (:first_name = "" OR LOWER(first_name) = LOWER(:first_name2))
+                  AND (birth_date = :birth_date OR DATE_FORMAT(birth_date, "%d.%m.%Y") = :birth_date2)';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'last_name' => $lastName,
+            'first_name' => $firstName,
+            'first_name2' => $firstName,
+            'birth_date' => $birthDate,
+            'birth_date2' => $birthDate,
+        ]);
+
+        return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+    }
+
+    /** Übernahme aus dem Clearing: Metadaten + Mappenzuordnung setzen. @param array<string,mixed> $data */
+    public function applyClearingAssignment(int $id, array $data): void
+    {
+        $sql = 'UPDATE documents SET document_type = :document_type, case_number = :case_number,
+                       first_name = :first_name, last_name = :last_name, birth_date = :birth_date,
+                       patient_key = :patient_key, patient_folder_id = :patient_folder_id, status = :status
+                WHERE id = :id';
+        $this->pdo->prepare($sql)->execute($data + ['id' => $id]);
+    }
+
+    /** Aktualisiert nur die erkannten Analyse-Werte (Neuanalyse im Clearing). @param array<string,mixed> $result */
+    public function updateAnalysisValues(int $id, array $result, ?string $model): void
+    {
+        $sql = 'UPDATE documents SET analysis_json = :analysis_json, analysis_model = :analysis_model WHERE id = :id';
+        $this->pdo->prepare($sql)->execute([
+            'analysis_json' => json_encode($result, JSON_UNESCAPED_UNICODE),
+            'analysis_model' => $model,
+            'id' => $id,
+        ]);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function findByFolderId(int $folderId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE patient_folder_id = :id ORDER BY created_at');
+        $stmt->execute(['id' => $folderId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** Fallnummer einer Mappe (z. B. temporär → endgültig) auf alle Dokumente übertragen. */
+    public function reassignCaseNumber(int $folderId, string $oldCaseNumber, string $newCaseNumber): void
+    {
+        $sql = 'UPDATE documents SET case_number = :new_cn,
+                       patient_key = SHA2(CONCAT_WS("|", COALESCE(last_name, ""), COALESCE(first_name, ""), COALESCE(birth_date, ""), :new_cn2), 256)
+                WHERE patient_folder_id = :folder_id OR (case_number = :old_cn AND :old_cn2 <> "")';
+        $this->pdo->prepare($sql)->execute([
+            'new_cn' => $newCaseNumber,
+            'new_cn2' => $newCaseNumber,
+            'folder_id' => $folderId,
+            'old_cn' => $oldCaseNumber,
+            'old_cn2' => $oldCaseNumber,
+        ]);
+    }
+
+    public function updateOriginalPath(int $id, string $path): void
+    {
+        $this->pdo->prepare('UPDATE documents SET original_path = :path WHERE id = :id')->execute(['path' => $path, 'id' => $id]);
+    }
 }
