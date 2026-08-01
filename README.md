@@ -248,6 +248,62 @@ PR #14 erweitert Import und Export um UNC-Netzwerkpfade mit optionalen Zugangsda
 
 PR #15 führt registrierte Signaturgeräte ein. iPads oder Tablets können als Kioskgeräte eingerichtet, vom Dashboard aus mit Patientenmappen belegt und nach Abschluss automatisch wieder freigegeben werden. Dazu kamen die Tabellen `devices`, `device_assignments`, `device_sessions` und `device_history`, Geräteauthentifizierung mit Tokenrotation, Long Polling, Heartbeats, Kiosk-Dokumentzugriff und ein Adminmodul für Geräteverwaltung und Gerätehistorie.
 
+### PR #16 - README aktualisieren
+
+PR #16 ergänzt die README um die Änderungen aus PR #10 bis PR #15.
+
+### PR #17 - Fix
+
+### PR #18 - Fix
+
+### PR #19 - Fix
+
+### PR #20 - Fix
+
+### PR #21 - Upload-Ergebnis als Dialog anzeigen
+
+PR #21 ersetzt die rohe JSON-Antwort nach dem Dokument-Upload durch einen Overlay-Dialog mit dem Ergebnis der Verarbeitung.
+
+### PR #22 - Dokument-Upload mit Analyse anstoßen
+
+PR #22 legt beim Upload den Dokumentdatensatz an und startet die KI-Analyse.
+
+### PR #23 - Hintergrundverarbeitung und Benachrichtigungen
+
+PR #23 lagert die Dokumentanalyse in einen Hintergrundprozess aus und führt eine Benachrichtigungszentrale ein.
+
+### PR #24 - Fix
+
+### PR #25 - Fix
+
+### PR #26 - Fix
+
+### PR #27 - Analyse-Prompt härten
+
+PR #27 übergibt das Fallnummern-Muster an den Analyse-Prompt, erzwingt konfigurierte Dokumenttypen und begrenzt die Ausgabe.
+
+### PR #28 - Fallnummern der letzten zwei Jahre akzeptieren
+
+PR #28 erweitert die Fallnummernerkennung auf Fallnummern aus den vergangenen zwei Jahren.
+
+### PR #29 - Fix
+
+### PR #30 - Fix
+
+### PR #31 - Übersicht heute signierter Dokumente
+
+PR #31 ergänzt eine Übersicht der heute signierten Dokumente mit PDF-Vorschauen.
+
+### PR #32 - Abschlussseite an signierte Dokumente anhängen
+
+PR #32 fügt signierten Dokumenten eine Abschlussseite hinzu und übernimmt die neue Vorlage als Standard.
+
+### PR #33 - Fix
+
+### PR #34 - Clearing-Bereich für nicht zuordenbare Dokumente
+
+PR #34 führt einen Clearing-Bereich ein, in dem nicht eindeutig zuordenbare Dokumente geprüft, korrigiert und Patientenmappen zugewiesen werden können.
+
 ## Weiterführende Dokumentation
 
 - [IIS-Installation](docs/iis-installation.md)
