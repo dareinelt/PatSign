@@ -62,6 +62,58 @@ final class DocumentRepository
     }
 
     /**
+     * Patientenmappen mit nicht unterschriebenen Dokumenten innerhalb des Zeitraums.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function unsignedFolders(int $hours, int $limit = 50): array
+    {
+        $sql = "SELECT case_number, MAX(last_name) AS last_name, MAX(first_name) AS first_name,
+                       MAX(birth_date) AS birth_date,
+                       COUNT(*) AS document_count,
+                       SUM(status IN ('signed','sent','archived')) AS done_count,
+                       SUM(status = 'error') AS error_count,
+                       SUM(status IN ('ready','analyzed')) AS ready_count,
+                       MAX(updated_at) AS updated_at
+                FROM documents
+                WHERE case_number IS NOT NULL
+                GROUP BY case_number
+                HAVING done_count < document_count
+                       AND MAX(updated_at) >= (NOW() - INTERVAL :hours HOUR)
+                ORDER BY updated_at DESC
+                LIMIT :limit";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue('hours', $hours, PDO::PARAM_INT);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Dokumente (Typ und Status) für mehrere Fallnummern.
+     *
+     * @param array<int,string> $caseNumbers
+     * @return array<int,array<string,mixed>>
+     */
+    public function documentsForCaseNumbers(array $caseNumbers): array
+    {
+        if ($caseNumbers === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($caseNumbers), '?'));
+        $sql = "SELECT id, case_number, document_type, status, created_at
+                FROM documents
+                WHERE case_number IN ($placeholders)
+                ORDER BY case_number, created_at";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(array_values($caseNumbers));
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
      * Heute unterschriebene Dokumente inkl. Signaturzeitpunkt.
      *
      * @return array<int,array<string,mixed>>

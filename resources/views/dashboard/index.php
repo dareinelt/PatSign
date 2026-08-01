@@ -70,7 +70,7 @@ ob_start();
                 <svg class="icon" aria-hidden="true"><use href="#icon-import"/></svg>
                 Dokument importieren
             </a>
-            <button class="quick-action" type="button" data-dialog-open="patient-start-dialog">
+            <button class="quick-action" type="button" id="open-folders-button" data-dialog-open="patient-folders-dialog">
                 <svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>
                 Patientenmappe öffnen
             </button>
@@ -279,6 +279,26 @@ ob_start();
     </div>
 </div>
 
+<dialog class="dialog dialog-wide" id="patient-folders-dialog" aria-labelledby="patient-folders-title">
+    <div class="dialog-header">
+        <h2 id="patient-folders-title">Patientenmappen mit offenen Unterschriften</h2>
+        <button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Dialog schließen">✕</button>
+    </div>
+    <div class="dialog-body">
+        <p class="form-hint mb-2" id="patient-folders-period"></p>
+        <div id="patient-folders-list">
+            <p class="table-empty mb-0">Patientenmappen werden geladen …</p>
+        </div>
+    </div>
+    <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" data-dialog-close>Schließen</button>
+        <button type="button" class="btn btn-primary" id="patient-folders-manual">Fallnummer manuell eingeben</button>
+    </div>
+    <form method="post" action="/patient/start" id="patient-folders-start-form" hidden>
+        <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+        <input type="hidden" name="case_number" id="patient-folders-start-case" value="">
+    </form>
+</dialog>
 <dialog class="dialog" id="patient-start-dialog" aria-labelledby="patient-start-title">
     <form method="post" action="/patient/start">
         <div class="dialog-header">
