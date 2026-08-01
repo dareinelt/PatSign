@@ -103,14 +103,19 @@ final class DocumentAnalysisService
             $this->documentTypes->all()
         )));
 
-        $casePrefix = '9' . date('y');
+        $currentYear = (int) date('Y');
+        $casePrefixes = array_map(
+            static fn (int $y): string => '9' . substr((string) $y, -2),
+            [$currentYear, $currentYear - 1, $currentYear - 2]
+        );
+        $prefixList = implode('", "', $casePrefixes);
         $rules = [
             'AUSGABEREGELN (zwingend):',
             '- Antworte mit genau einem JSON-Objekt und sonst nichts: kein Markdown, keine Code-Zäune, keine Erklärungen, keine Gedankengänge.',
             '- Verwende exakt diese Schlüssel: document_type, case_number, last_name, first_name, birth_date.',
             '- Wenn eine Information nicht eindeutig im Text steht, setze den Wert auf null. Erfinde nichts.',
             '- birth_date im Format TT.MM.JJJJ.',
-            '- case_number ist eine 8-stellige Zahl, die immer mit "9" beginnt, gefolgt von den letzten zwei Ziffern des aktuellen Jahres – sie beginnt also mit "' . $casePrefix . '" (Beispiel: "' . $casePrefix . '01234"). Ignoriere Zahlen, die nicht diesem Muster entsprechen.',
+            '- case_number ist eine 8-stellige Zahl, die immer mit "9" beginnt, gefolgt von den letzten zwei Ziffern des Jahres (aktuelles Jahr oder eines der zwei Vorjahre) – sie beginnt also mit "' . $prefixList . '" (Beispiele: "' . $casePrefixes[0] . '01234", "' . $casePrefixes[1] . '01234"). Ignoriere Zahlen, die nicht diesem Muster entsprechen.',
         ];
 
         if ($typeNames !== []) {
