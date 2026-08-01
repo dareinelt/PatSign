@@ -59,7 +59,7 @@
 
         function loadModels(type) {
             const status = document.querySelector('[data-ai-models-status="' + type + '"]');
-            const datalist = document.getElementById(type + "-model-list");
+            const select = document.getElementById(type + "-model");
             if (!fieldValue(type, "host")) {
                 return;
             }
@@ -78,13 +78,25 @@
                         throw new Error(data.error);
                     }
                     const models = data.models || [];
-                    if (datalist) {
-                        datalist.innerHTML = "";
+                    if (select) {
+                        const current = select.value;
+                        select.innerHTML = "";
+                        // Gespeicherten Wert beibehalten, falls er nicht in der Liste ist
+                        if (current && models.indexOf(current) === -1) {
+                            const keep = document.createElement("option");
+                            keep.value = current;
+                            keep.textContent = current;
+                            select.appendChild(keep);
+                        }
                         models.forEach(function (model) {
                             const option = document.createElement("option");
                             option.value = model;
-                            datalist.appendChild(option);
+                            option.textContent = model;
+                            select.appendChild(option);
                         });
+                        if (current) {
+                            select.value = current;
+                        }
                     }
                     if (status) {
                         status.textContent = models.length
@@ -106,11 +118,11 @@
                     input.addEventListener("change", function () { loadModels(type); });
                 }
             });
-            const modelInput = document.getElementById(type + "-model");
-            if (modelInput) {
-                modelInput.addEventListener("focus", function () {
-                    const datalist = document.getElementById(type + "-model-list");
-                    if (datalist && datalist.children.length === 0) {
+            const modelSelect = document.getElementById(type + "-model");
+            if (modelSelect) {
+                // Nachladen, falls noch keine Modelle geladen wurden
+                modelSelect.addEventListener("focus", function () {
+                    if (modelSelect.options.length <= 1) {
                         loadModels(type);
                     }
                 });
