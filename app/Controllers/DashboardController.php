@@ -90,6 +90,68 @@ final class DashboardController extends BaseController
         ]);
     }
 
+    /** Laufende KI-Analysen mit Original-Dateinamen und Fortschrittsschätzung. */
+    public function analyzing(): Response
+    {
+        $documents = $this->safeCall(fn () => $this->documents->analyzingDocuments());
+        $avgDurationMs = null;
+        try {
+            $avgDurationMs = $this->documents->averageAnalysisDurationMs();
+        } catch (\Throwable) {
+            // Ohne Historie wird der Fortschritt unbestimmt angezeigt.
+        }
+
+        $items = [];
+        foreach ($documents as $document) {
+            $elapsedSeconds = max(0, (int) ($document['elapsed_seconds'] ?? 0));
+            $progress = null;
+            if ($avgDurationMs !== null && $avgDurationMs > 0) {
+                // Schätzung anhand der bisherigen Durchschnittsdauer, gedeckelt bei 95 %.
+                $progress = min(0.95, ($elapsedSeconds * 1000) / $avgDurationMs);
+            }
+            $items[] = [
+                'id' => (int) $document['id'],
+                'file_name' => basename((string) $document['original_path']),
+                'started_at' => (string) $document['updated_at'],
+                'elapsed_seconds' => $elapsedSeconds,
+                'progress' => $progress,
+            ];
+        }
+
+        return $this->json([
+            'documents' => $items,
+            'count' => count($items),
+        ]);
+    }
+
+    /**
+     * Notfall: überspringt die KI-Analyse und verschiebt das Dokument direkt
+     * ins Clearing zur manuellen Zuordnung.
+     */
+    public function emergency(Request $request): Response
+    {
+        $id = (int) $request->input('document_id');
+        $document = $this->documents->findById($id);
+        if ($document === null) {
+            return $this->json(['error' => 'Dokument nicht gefunden.'], 404);
+        }
+
+        if (!in_array((string) $document['status'], ['imported', 'analyzing'], true)) {
+            return $this->json(['error' => 'Das Dokument befindet sich nicht mehr in der Analyse.'], 409);
+        }
+
+        $userId = isset($_SESSION['auth_user']['id']) ? (int) $_SESSION['auth_user']['id'] : null;
+        try {
+            $this->clearing->moveToClearing($id, 'MANUAL_EMERGENCY', [], null, $userId, false);
+        } catch (\Throwable) {
+            return $this->json(['error' => 'Dokument konnte nicht ins Clearing verschoben werden.'], 500);
+        }
+
+        return $this->json([
+            'message' => basename((string) $document['original_path']) . ' wurde ins Clearing verschoben.',
+        ]);
+    }
+
     /** @return array<string,mixed> */
     private function clearingStats(): array
     {

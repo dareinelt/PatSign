@@ -283,4 +283,116 @@
             window.PatSignUI.openDialog("patient-start-dialog");
         });
     }
+
+    /* Kachel "KI wird ausgeführt": laufende Analysen mit Fortschritt und Notfall-Aktion */
+    const analyzingDialog = document.getElementById("analyzing-dialog");
+    const analyzingList = document.getElementById("analyzing-list");
+    const analyzingTile = document.getElementById("analyzing-tile");
+    const analyzingCount = document.getElementById("analyzing-count");
+    let analyzingTimer = null;
+
+    function formatElapsed(seconds) {
+        const s = Math.max(0, seconds || 0);
+        if (s < 60) {
+            return s + " s";
+        }
+        return Math.floor(s / 60) + " min " + (s % 60) + " s";
+    }
+
+    function renderAnalyzing(data) {
+        const docs = data.documents || [];
+
+        if (analyzingCount) {
+            analyzingCount.textContent = String(data.count || 0);
+        }
+
+        if (docs.length === 0) {
+            analyzingList.innerHTML = '<p class="table-empty mb-0">Aktuell laufen keine KI-Analysen.</p>';
+            return;
+        }
+
+        analyzingList.innerHTML = docs.map(function (doc) {
+            const percent = doc.progress == null ? null : Math.round(doc.progress * 100);
+            const progressHtml = percent == null
+                ? '<div class="progress" aria-hidden="true"><div class="progress-bar analyzing-indeterminate" style="width: 40%"></div></div>'
+                : '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + percent + '">' +
+                  '<div class="progress-bar" style="width: ' + percent + '%"></div></div>';
+            return '<div class="patient-row analyzing-row">' +
+                '<div class="analyzing-info">' +
+                '<div class="patient-name">' + escapeHtml(doc.file_name || "Dokument") + "</div>" +
+                '<div class="patient-meta">Analyse läuft seit ' + formatElapsed(doc.elapsed_seconds) +
+                (percent == null ? "" : " · ca. " + percent + " %") + "</div>" +
+                progressHtml +
+                "</div>" +
+                '<div class="patient-actions">' +
+                '<button type="button" class="btn btn-danger btn-sm" data-emergency="' + doc.id + '" ' +
+                'title="Überspringt die Analyse und verschiebt Dokument direkt in das Clearing zur manuellen Zuordnung">' +
+                "Notfall</button>" +
+                "</div>" +
+                "</div>";
+        }).join("");
+    }
+
+    function loadAnalyzing() {
+        if (!analyzingList) {
+            return;
+        }
+        fetch("/dashboard/analyzing", { headers: { Accept: "application/json" } })
+            .then(function (response) { return response.json(); })
+            .then(renderAnalyzing)
+            .catch(function () {
+                analyzingList.innerHTML = '<p class="table-empty mb-0">Laufende Analysen konnten nicht geladen werden.</p>';
+            });
+    }
+
+    function stopAnalyzingPolling() {
+        if (analyzingTimer !== null) {
+            window.clearInterval(analyzingTimer);
+            analyzingTimer = null;
+        }
+    }
+
+    if (analyzingTile && analyzingDialog && analyzingList) {
+        analyzingTile.addEventListener("click", function () {
+            loadAnalyzing();
+            stopAnalyzingPolling();
+            analyzingTimer = window.setInterval(loadAnalyzing, 3000);
+        });
+        analyzingDialog.addEventListener("close", stopAnalyzingPolling);
+    }
+
+    if (analyzingList) {
+        analyzingList.addEventListener("click", function (event) {
+            const trigger = event.target.closest("[data-emergency]");
+            if (!trigger) {
+                return;
+            }
+            trigger.disabled = true;
+            const body = new URLSearchParams({
+                _csrf: analyzingList.getAttribute("data-csrf") || "",
+                document_id: trigger.getAttribute("data-emergency") || ""
+            });
+            fetch("/dashboard/emergency", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+                body: body.toString()
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        return { ok: response.ok, data: data };
+                    });
+                })
+                .then(function (result) {
+                    if (!result.ok) {
+                        throw new Error(result.data.error || "Aktion fehlgeschlagen");
+                    }
+                    window.PatSignUI.toast(result.data.message || "Dokument ins Clearing verschoben.", "success");
+                    loadAnalyzing();
+                })
+                .catch(function (error) {
+                    window.PatSignUI.toast(error.message, "error");
+                    trigger.disabled = false;
+                });
+        });
+    }
 })();

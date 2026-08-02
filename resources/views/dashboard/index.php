@@ -93,6 +93,11 @@ ob_start();
                         <span class="stat-value"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
                         <span class="stat-label"><?= e($label) ?></span>
                     </a>
+                <?php elseif ($key === 'analyzing' && (int) ($statusCounts[$key] ?? 0) > 0): ?>
+                    <button type="button" class="stat-card stat-card-link" id="analyzing-tile" data-dialog-open="analyzing-dialog" aria-label="Laufende KI-Analysen anzeigen">
+                        <span class="stat-value" id="analyzing-count"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
+                        <span class="stat-label"><?= e($label) ?></span>
+                    </button>
                 <?php else: ?>
                     <div class="stat-card <?= $key === 'error' ? 'is-error' : '' ?> <?= $key === 'sent' ? 'is-success' : '' ?>">
                         <span class="stat-value"><?= (int) ($statusCounts[$key] ?? 0) ?></span>
@@ -279,6 +284,21 @@ ob_start();
     </div>
 </div>
 
+<dialog class="dialog dialog-wide" id="analyzing-dialog" aria-labelledby="analyzing-dialog-title">
+    <div class="dialog-header">
+        <h2 id="analyzing-dialog-title">KI wird ausgeführt</h2>
+        <button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Dialog schließen">✕</button>
+    </div>
+    <div class="dialog-body">
+        <p class="form-hint mb-2">Original-Dateinamen und Fortschritt der laufenden Analysen. Die Ansicht aktualisiert sich automatisch.</p>
+        <div id="analyzing-list" data-csrf="<?= e($csrf) ?>">
+            <p class="table-empty mb-0">Laufende Analysen werden geladen …</p>
+        </div>
+    </div>
+    <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" data-dialog-close>Schließen</button>
+    </div>
+</dialog>
 <dialog class="dialog dialog-wide" id="patient-folders-dialog" aria-labelledby="patient-folders-title">
     <div class="dialog-header">
         <h2 id="patient-folders-title">Patientenmappen mit offenen Unterschriften</h2>
