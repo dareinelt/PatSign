@@ -36,6 +36,30 @@ final class DocumentRepository
     }
 
     /**
+     * Dokumente, deren KI-Analyse gerade läuft, inkl. Wartezeit seit Analysestart.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function analyzingDocuments(): array
+    {
+        $sql = "SELECT id, original_path, updated_at,
+                       TIMESTAMPDIFF(SECOND, updated_at, NOW()) AS elapsed_seconds
+                FROM documents
+                WHERE status = 'analyzing'
+                ORDER BY updated_at";
+
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** Durchschnittliche Analysedauer (ms) abgeschlossener Analysen, für die Fortschrittsschätzung. */
+    public function averageAnalysisDurationMs(): ?int
+    {
+        $value = $this->pdo->query('SELECT AVG(analysis_duration_ms) FROM documents WHERE analysis_duration_ms IS NOT NULL')->fetchColumn();
+
+        return is_numeric($value) ? (int) round((float) $value) : null;
+    }
+
+    /**
      * Patienten mit offenen (nicht signierten/versendeten) Dokumenten, gruppiert nach Fallnummer.
      *
      * @return array<int,array<string,mixed>>

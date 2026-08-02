@@ -37,6 +37,12 @@ final class DocumentProcessingService
             return;
         }
 
+        // Notfall-Übernahme: bereits ins Clearing verschobene Dokumente
+        // werden nicht erneut analysiert.
+        if ((string) $document['status'] === 'clearing') {
+            return;
+        }
+
         $path = (string) $document['original_path'];
         $fileName = basename($path);
         $model = $_ENV['ANALYSIS_MODEL'] ?? 'gemma-4-e4b';
@@ -57,6 +63,10 @@ final class DocumentProcessingService
             $this->recordRun($documentId, false, null, $extractedText, $e->getMessage(), $model, $start);
             $this->auditLog('document_analysis_failed', ['file' => $fileName, 'error' => $e->getMessage(), 'error_code' => $errorCode], $documentId);
 
+            if ($this->wasDivertedToClearing($documentId)) {
+                return;
+            }
+
             if ($this->clearing->autoClearingEnabled()) {
                 $this->clearing->moveToClearing($documentId, $errorCode, ['error' => $e->getMessage()], null);
             } else {
@@ -69,6 +79,12 @@ final class DocumentProcessingService
 
         $durationMs = (int) round((microtime(true) - $start) * 1000);
         $this->recordRun($documentId, true, $result, $extractedText, null, $model, $start);
+
+        // Wurde das Dokument währenddessen per Notfall ins Clearing verschoben,
+        // darf das Analyseergebnis die manuelle Bearbeitung nicht überschreiben.
+        if ($this->wasDivertedToClearing($documentId)) {
+            return;
+        }
 
         $caseNumber = isset($result['case_number']) && is_string($result['case_number']) && $result['case_number'] !== ''
             ? $result['case_number']
@@ -123,6 +139,18 @@ final class DocumentProcessingService
             $details !== [] ? implode(' · ', $details) : 'Das Dokument wurde erfolgreich analysiert.',
             $documentId
         );
+    }
+
+    /** Prüft, ob das Dokument zwischenzeitlich (Notfall) ins Clearing verschoben wurde. */
+    private function wasDivertedToClearing(int $documentId): bool
+    {
+        try {
+            $document = $this->documents->findById($documentId);
+
+            return $document !== null && (string) $document['status'] === 'clearing';
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**

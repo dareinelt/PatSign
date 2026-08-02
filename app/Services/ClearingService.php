@@ -119,7 +119,7 @@ final class ClearingService
      *
      * @param array<string,mixed> $detectedValues
      */
-    public function moveToClearing(int $documentId, string $errorCode, array $detectedValues, ?float $confidence, ?int $userId = null): int
+    public function moveToClearing(int $documentId, string $errorCode, array $detectedValues, ?float $confidence, ?int $userId = null, bool $allowAutoReanalysis = true): int
     {
         $existing = $this->cases->findOpenByDocumentId($documentId);
         if ($existing !== null) {
@@ -152,7 +152,8 @@ final class ClearingService
         );
 
         // Optionale automatische Neuanalyse, solange Versuche übrig sind.
-        if ($this->settings->getBool('clearing.auto_reanalysis', false)
+        if ($allowAutoReanalysis
+            && $this->settings->getBool('clearing.auto_reanalysis', false)
             && $this->analysisRuns->countForDocument($documentId) < $this->maxAiAttempts()) {
             $this->startReanalysis($caseId, 'both', null, true);
         }
