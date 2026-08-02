@@ -11,6 +11,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
 use App\Controllers\FormController;
+use App\Controllers\HealthController;
 use App\Controllers\KioskController;
 use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
@@ -31,6 +32,7 @@ use App\Repositories\FormFieldRepository;
 use App\Repositories\FormFieldTypeRepository;
 use App\Repositories\FormResponseRepository;
 use App\Repositories\FormTemplateRepository;
+use App\Repositories\HealthCheckHistoryRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PatientFolderRepository;
 use App\Repositories\PromptRepository;
@@ -104,6 +106,7 @@ final class ApplicationFactory
         ));
         $container->singleton(SettingsService::class, fn (Container $c) => new SettingsService($c->get(SystemSettingRepository::class), $c->get(Config::class)));
         $container->singleton(SystemStatusService::class, fn (Container $c) => new SystemStatusService($c->get(\PDO::class), $c->get(SettingsService::class), $c->get(NetworkShareService::class)));
+        $container->singleton(HealthCheckHistoryRepository::class, fn (Container $c) => new HealthCheckHistoryRepository($c->get(\PDO::class)));
         $container->singleton(MailService::class, fn (Container $c) => new MailService($c->get(SettingsService::class)));
         $container->singleton(NetworkShareService::class, fn () => new NetworkShareService());
         $container->singleton(PromptService::class, fn (Container $c) => new PromptService($c->get(PromptRepository::class)));
@@ -289,9 +292,14 @@ final class ApplicationFactory
             $container->get(View::class),
             $container->get(DeviceService::class)
         );
+        $healthController = new HealthController(
+            $container->get(View::class),
+            $container->get(SystemStatusService::class),
+            $container->get(HealthCheckHistoryRepository::class)
+        );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController, $formController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController, $formController, $healthController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),
