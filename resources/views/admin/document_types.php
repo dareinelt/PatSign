@@ -6,6 +6,15 @@ ob_start();
 <div class="card">
     <div class="card-header">
         <h2>Dokumenttypen</h2>
+        <form method="post" action="/admin/settings" data-autosubmit>
+            <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="section" value="document-types">
+            <label class="checkbox-label">
+                <input type="checkbox" name="first_page_only" value="1"
+                    <?= $settings->getBool('analysis.first_page_only', false) ? 'checked' : '' ?>>
+                Nur Seite 1 zur KI-Erkennung und -Analyse senden
+            </label>
+        </form>
         <button type="button" class="btn btn-primary btn-sm" data-dialog-open="doc-type-create-dialog">
             <svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg>
             Neuer Dokumenttyp

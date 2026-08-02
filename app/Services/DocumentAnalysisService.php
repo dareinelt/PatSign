@@ -14,7 +14,8 @@ final class DocumentAnalysisService
         private readonly LocalAiClient $analysisClient,
         private readonly PromptService $promptService,
         private readonly CaseNumberExtractor $caseNumberExtractor,
-        private readonly DocumentTypeRepository $documentTypes
+        private readonly DocumentTypeRepository $documentTypes,
+        private readonly SettingsService $settings
     ) {}
 
     /** @return array<string,mixed> Analyseergebnis inkl. "extracted_text" (Vision-Rohtext) */
@@ -35,6 +36,10 @@ final class DocumentAnalysisService
         }
 
         $images = $this->renderPdfPagesToImages($pdfPath);
+        if ($this->settings->getBool('analysis.first_page_only', false)) {
+            // Konfigurierbar: nur Seite 1 an die KI-Endpunkte übergeben.
+            $images = array_slice($images, 0, 1);
+        }
         $visionPrompt = $this->promptService->getActivePrompt('vision');
 
         $visionResponse = $this->visionClient->chat([

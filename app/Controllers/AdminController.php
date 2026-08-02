@@ -423,6 +423,9 @@ final class AdminController extends BaseController
                 'export_password' => 'export.share_password',
                 'file_naming' => 'export.file_naming',
             ],
+            'document-types' => [
+                'first_page_only' => 'analysis.first_page_only',
+            ],
             'smtp' => [
                 'host' => 'mail.host',
                 'port' => 'mail.port',
@@ -463,6 +466,7 @@ final class AdminController extends BaseController
                 'prefill_locked' => 'forms.prefill_locked',
             ],
             'import' => ['auto_import' => 'import.auto_import'],
+            'document-types' => ['first_page_only' => 'analysis.first_page_only'],
             'export' => ['pdfa_enabled' => 'export.pdfa_enabled'],
             'clearing' => [
                 'auto_clearing_enabled' => 'clearing.auto_clearing_enabled',
