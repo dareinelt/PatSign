@@ -1,5 +1,7 @@
 # API-Dokumentation (interne Routen)
 
+- `GET /health` Öffentliche Healthcheck-Seite (Ampeldarstellung aller Komponenten inkl. KI-Endpunkte + 48h-Zeitstrahl; kein Login nötig; HTTP 503 bei Störung)
+- `GET /health/data` Healthcheck als JSON (`status`, `checks`, `timeline`, `generated_at`; kein Login nötig)
 - `GET /login` Login-Formular
 - `POST /login` Anmeldung
 - `POST /logout` Abmeldung

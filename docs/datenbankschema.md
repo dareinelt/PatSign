@@ -1,6 +1,6 @@
 # Datenbankschema
 
-Siehe `database/migrations/001_initial.sql`, `003_devices.sql` (Geräteverwaltung: `devices`, `device_assignments`, `device_sessions`, `device_history` – mit UUIDs, Foreign Keys und Indizes), `004_notifications.sql` (Benachrichtigungen über abgeschlossene Hintergrund-Analysen) sowie `006_forms.sql` (interaktive Formulare).
+Siehe `database/migrations/001_initial.sql`, `003_devices.sql` (Geräteverwaltung: `devices`, `device_assignments`, `device_sessions`, `device_history` – mit UUIDs, Foreign Keys und Indizes), `004_notifications.sql` (Benachrichtigungen über abgeschlossene Hintergrund-Analysen), `006_forms.sql` (interaktive Formulare) sowie `007_health_history.sql` (`health_check_history` – Healthcheck-Snapshots je Komponente für den 48h-Zeitstrahl unter `/health`, automatische Bereinigung nach 14 Tagen).
 
 ## Interaktive Formulare (`006_forms.sql`)
 

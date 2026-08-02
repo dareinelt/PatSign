@@ -9,6 +9,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
 use App\Controllers\DocumentController;
 use App\Controllers\FormController;
+use App\Controllers\HealthController;
 use App\Controllers\KioskController;
 use App\Controllers\NotificationController;
 use App\Controllers\PatientController;
@@ -26,10 +27,15 @@ return static function (
     DeviceController $devices,
     NotificationController $notifications,
     ClearingController $clearing,
-    FormController $forms
+    FormController $forms,
+    HealthController $health
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
+
+    // Öffentlicher Healthcheck (Ampelübersicht + 48h-Zeitstrahl)
+    $router->get('/health', static fn () => $health->index());
+    $router->get('/health/data', static fn () => $health->data());
     $router->post('/login', static fn (Request $request) => $auth->login($request));
     $router->post('/logout', static fn () => $auth->logout());
 

@@ -1,0 +1,132 @@
+/* Healthcheck-Seite (/health): Ampeln + 48h-Zeitstrahl */
+
+.health-page {
+    background: var(--color-bg, #f4f6f8);
+    min-height: 100vh;
+}
+
+.health-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.health-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.health-meta {
+    color: var(--color-text-muted, #6b7280);
+    font-size: 0.875rem;
+    margin: 0.25rem 0 0;
+}
+
+.health-overall {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-full, 999px);
+    font-weight: 600;
+}
+
+.health-overall.is-ok { background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
+.health-overall.is-warn { background: color-mix(in srgb, var(--color-warning) 15%, transparent); color: var(--color-warning); }
+.health-overall.is-error { background: color-mix(in srgb, var(--color-danger) 15%, transparent); color: var(--color-danger); }
+
+.health-card h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.health-check-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.health-check {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.health-check:last-child { border-bottom: none; }
+
+.health-check-label { font-weight: 600; min-width: 10rem; }
+
+.health-check-detail {
+    color: var(--color-text-muted, #6b7280);
+    font-size: 0.875rem;
+    margin-left: auto;
+    text-align: right;
+}
+
+/* Zeitstrahl */
+.health-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.health-timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.health-timeline-label {
+    min-width: 10rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.health-timeline-slots {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+}
+
+.health-slot {
+    flex: 1;
+    min-width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.health-slot.is-ok { background: var(--color-success); }
+.health-slot.is-warn { background: var(--color-warning); }
+.health-slot.is-error { background: var(--color-danger); }
+.health-slot.is-none { background: var(--color-border, #e5e7eb); }
+
+.health-legend {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #6b7280);
+}
+
+.health-legend .health-slot {
+    flex: none;
+    width: 16px;
+    vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+    .health-timeline-label,
+    .health-check-label { min-width: 7rem; }
+}

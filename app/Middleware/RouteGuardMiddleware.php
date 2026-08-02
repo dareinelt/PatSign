@@ -9,14 +9,14 @@ use App\Core\Response;
 
 /**
  * Pfadbasierte Zugriffskontrolle:
- * - Öffentliche Pfade: Login und statische Fehlerseiten
+ * - Öffentliche Pfade: Login, Healthcheck und statische Fehlerseiten
  * - Patientenpfade: erfordern eine durch das Personal gestartete Patientensitzung
  * - Adminpfade: erfordern die Rolle "admin"
  * - Alle übrigen Pfade: erfordern einen angemeldeten Benutzer
  */
 final class RouteGuardMiddleware
 {
-    private const PUBLIC_PATHS = ['/login'];
+    private const PUBLIC_PATHS = ['/login', '/health', '/health/data'];
 
     public function __invoke(Request $request, callable $next): Response
     {
