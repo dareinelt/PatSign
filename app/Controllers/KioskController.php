@@ -63,6 +63,21 @@ final class KioskController extends BaseController
             'clinicName' => $clinicName,
             'deviceName' => (string) $device['name'],
             'deviceStatus' => (string) $device['status'],
+            'emailConsentNotice' => $this->emailConsentNotice($clinicName),
+        ]);
+    }
+
+    /** Belehrungstext zur E-Mail-Einwilligung mit befüllten Platzhaltern. */
+    private function emailConsentNotice(string $clinicName): string
+    {
+        $template = $this->settings->getString(
+            'kiosk.email_consent_notice',
+            CompletionPageService::DEFAULT_KIOSK_EMAIL_NOTICE
+        );
+
+        return strtr($template, [
+            '{klinik}' => $clinicName,
+            '{ort}' => $this->settings->getString('general.clinic_location', ''),
         ]);
     }
 

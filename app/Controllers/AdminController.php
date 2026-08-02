@@ -391,6 +391,7 @@ final class AdminController extends BaseController
                 'signed_statement' => 'completion.signed_statement',
                 'footer_title' => 'completion.footer_title',
                 'footer_template' => 'completion.footer_template',
+                'kiosk_email_notice' => 'kiosk.email_consent_notice',
             ],
             'ai' => [
                 'vision_host' => 'ai.vision.host',
