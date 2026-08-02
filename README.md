@@ -10,6 +10,8 @@ Der Fokus liegt auf einem kontrollierten lokalen Betrieb: keine CDN-Abhängigkei
 
 Das Dashboard unter `/dashboard` ist die zentrale Arbeitsoberfläche für den Praxis- oder Stationsbetrieb. Es zeigt wartende Patientenmappen, Dokumentstatus, Systemzustände und aktuelle Aktivitäten. Über die Suche können Mappen anhand von Name, Vorname oder Fallnummer gefunden werden. Wartende Mappen können entweder im lokalen Patientenmodus gestartet oder direkt an ein registriertes Signaturgerät gesendet werden.
 
+Vor der Übergabe an einen Patienten öffnet die Schaltfläche „Patientenmappe öffnen" ein Übersichts-Overlay mit allen Mappen, die innerhalb eines konfigurierbaren Zeitraums offene Dokumente enthalten. Das Personal sieht auf einen Blick, welche Dokumente noch fehlen oder bereits unterschrieben sind, und kann die Sitzung direkt aus dem Overlay starten oder an ein Gerät senden. Die KI-Kachel wird bei laufenden Analysen zum interaktiven Button: Ein Dialog zeigt Originaldateinamen, Laufzeiten und einen Fortschrittsbalken. Über eine Notfall-Schaltfläche kann ein Dokument sofort ins Clearing verschoben werden, ohne auf den Abschluss der Analyse zu warten.
+
 ### Patientenmodus
 
 Der Patientenmodus unter `/patient` führt durch einen klar begrenzten Wizard:
@@ -80,6 +82,7 @@ Der Administrationsbereich unter `/admin` ist rollenbeschränkt und enthält die
 - Benutzer
 - Rollen
 - Geräte
+- Formulare
 - System
 
 Einstellungen werden in der Datenbank gespeichert und überschreiben die Konfigurationsdateien. Dadurch lassen sich KI-Endpunkte, SMTP, Import/Export, Dokumenttypen, Prompts, Benutzer und Rollen ohne Quellcodeänderungen anpassen.
@@ -173,6 +176,9 @@ Aktuelle Migrationsstände:
 | `004_notifications.sql` | Benachrichtigungen über abgeschlossene Hintergrund-Analysen |
 | `005_clearing.sql` | Clearing-Workflow für unklare Dokumentzuordnungen |
 | `006_forms.sql` | interaktive Formulare: Vorlagen, Felder, Feldtypen, Eingaben, Versionen; `documents.is_interactive`/`form_status` |
+| `007_health_history.sql` | Verlaufstabelle `health_check_history` für die öffentliche Statusseite `/health`; Einträge älter als 14 Tage werden automatisch bereinigt |
+
+Migrationen laufen seit PR #38 idempotent: Die Tabelle `schema_migrations` zeichnet jede angewendete Migrationsdatei auf. Wiederholte Aufrufe von `php database/migrate.php` sind daher gefahrlos und führen keine bereits angewendete Migration erneut aus.
 
 ## Sicherheit und Betrieb
 
@@ -226,6 +232,9 @@ Die wichtigsten Services sind unter anderem `PdfImportService`, `DocumentAnalysi
 | `/clearing` | Clearing-Übersicht für nicht zuordenbare Dokumente |
 | `/clearing/case`, `/clearing/document`, `/clearing/patients/search` | Detailansicht, PDF-Auslieferung und Live-Patientensuche |
 | `/clearing/update`, `/clearing/assign`, `/clearing/folder`, `/clearing/case-number`, `/clearing/reanalyze`, `/clearing/complete`, `/clearing/archive` | Werte korrigieren, zuordnen, Mappen anlegen, Neuanalyse und Abschluss |
+| `/health`, `/health/data` | Öffentliche Statusseite (Ampellogik, 48h-Timeline) und JSON-Endpunkt für externes Monitoring |
+| `/dashboard/folders` | Mappenübersicht mit offenen Dokumenten für konfigurierbaren Zeitraum |
+| `/dashboard/analyzing`, `/dashboard/emergency` | Laufende Analysen abrufen und Notfall-Clearing auslösen |
 | `/admin/*` | Administrationsmodule |
 | `/admin/ai/models`, `/admin/ai/test` | Modellliste und Verbindungstest für KI-Endpunkte |
 | `/admin/share/test` | Zugriffstest für Netzwerkfreigaben |
@@ -238,6 +247,31 @@ composer test
 ```
 
 Für Syntaxprüfungen kann zusätzlich `php -l` auf geänderte PHP-Dateien angewendet werden. Dokumentationsänderungen benötigen keine Anwendungstests.
+
+## Vorteile bei Workflowoptimierung
+
+PatSign reduziert manuelle Schritte und Wartezeiten im Praxis- und Klinikbetrieb spürbar:
+
+- **Vollständig digitaler Dokumentenworkflow**: PDFs werden automatisch importiert, per KI analysiert und der richtigen Patientenmappe zugeordnet. Personal und Patienten arbeiten ausschließlich digital – kein Ausdrucken, kein Scannen, kein manuelles Ablegen.
+- **Inline-Formularausfüllung**: Anamnesebögen und Fragebögen können direkt auf dem iPad ausgefüllt werden, nahtlos vor der Unterschrift. Kein Medienbruch, kein Wechsel zwischen Papier und System.
+- **Freihandmodus**: Als Alternative zur Formularanalyse ermöglicht der Freihandmodus das direkte Schreiben mit dem Apple Pencil auf dem Dokument. Handschriftliche Anmerkungen werden serverseitig in das signierte PDF eingebrannt, ohne dass ein zweites System oder Papierdokument benötigt wird.
+- **Kiosk-Geräteverwaltung**: Tablets werden zentral registriert, zugewiesen und überwacht. Das Personal startet die Sitzung per Klick vom Dashboard; das Gerät führt den Patienten selbstständig durch den Wizard und meldet sich nach Abschluss automatisch zurück.
+- **Mappenübersicht vor Übergabe**: Bevor das Tablet an einen Patienten übergeben wird, kann das Personal im Dashboard auf einen Blick prüfen, welche Dokumente noch fehlen oder offen sind – mit konfigurierbarem Zeitraum und direkter Start-Aktion.
+- **Bereits unterschriebene Dokumente werden übersprungen**: Erhält ein Patient erneut eine Mappe, werden bereits signierte Dokumente automatisch ausgeblendet. Doppelarbeit wird vermieden.
+- **Notfall-Aktion bei langen Analysen**: Wenn ein Dokument dringend benötigt wird und die KI-Analyse zu lange läuft, kann das Personal per Schaltfläche das Dokument sofort ins Clearing verschieben und manuell zuordnen – ohne Wartezeit.
+- **Öffentliche Statusseite**: Die passwortfreie `/health`-Seite mit Ampellogik und 48-Stunden-Timeline erlaubt Operations-Teams, den Systemzustand ohne Login und ohne Zugang zum Admin-Bereich zu überwachen.
+- **Sichere Migrationsverwaltung**: Migrationen laufen nur einmal. Wiederholte Aufrufe von `php database/migrate.php` sind idempotent und können im Routinebetrieb und bei Updates gefahrlos ausgeführt werden.
+
+## Umweltaspekte
+
+PatSign ist konsequent auf papierlosen Betrieb ausgelegt und unterstützt die Nachhaltigkeitsziele von Praxen und Kliniken:
+
+- **Papiereinsparung**: Aufklärungs- und Einwilligungsformulare, Anamnesebögen, Fragebögen und Dokumentationsbögen werden vollständig digital abgebildet. Kein Dokument muss ausgedruckt, unterschrieben und anschließend gescannt oder abgeheftet werden.
+- **Lokale KI – keine Cloud-Abhängigkeit**: KI-Analysen laufen auf lokal betriebenen, OpenAI-kompatiblen Endpunkten. Es wird keine Rechenleistung in externen Rechenzentren benötigt und keine Patientendaten über das Netz übertragen.
+- **Freihandmodus als Papierersatz**: Statt Handschrift auf Papier schreiben Patienten direkt auf dem Touchscreen. Die Eingaben werden digital archiviert, ohne Papierverbrauch oder physischen Ablageaufwand.
+- **Revisionssichere digitale Ablage**: Signierte Dokumente werden mit Abschlussseite, Belehrungstext und Unterschrift in einem einzigen PDF archiviert. Physische Akten entfallen, Lager- und Transportaufwand für Papierdokumente werden eliminiert.
+- **Datenschutzkonforme E-Mail-Einwilligung dokumentiert im PDF**: Der Datenschutz-Belehrungstext für den digitalen E-Mail-Versand wird als eigene Seite ins signierte PDF eingebettet. Damit ist die datenschutzrechtliche Aufklärung lückenlos dokumentiert, ohne einen zusätzlichen Papierdruck.
+- **Energieeffiziente Infrastruktur**: Der Betrieb auf vorhandener interner Hardware (z. B. bestehende Server, NAS, Tablets) vermeidet zusätzliche Hardware-Investitionen. Docker-basiertes Deployment ermöglicht ressourcenschonenden Betrieb auf gemeinsam genutzten Systemen.
 
 ## Änderungen seit PR #10
 
@@ -320,6 +354,50 @@ PR #32 fügt signierten Dokumenten eine Abschlussseite hinzu und übernimmt die 
 ### PR #34 - Clearing-Bereich für nicht zuordenbare Dokumente
 
 PR #34 führt einen Clearing-Bereich ein, in dem nicht eindeutig zuordenbare Dokumente geprüft, korrigiert und Patientenmappen zugewiesen werden können.
+
+### PR #35 - README aktualisieren
+
+PR #35 ergänzt die README um die Änderungen aus PR #21 bis PR #34.
+
+### PR #36 - Mappenübersicht-Overlay mit konfigurierbarem Zeitraum
+
+PR #36 ersetzt den einfachen Fallnummern-Dialog auf dem Dashboard durch ein Übersichts-Overlay. Das Personal sieht alle Patientenmappen mit offenen Dokumenten innerhalb eines konfigurierbaren Zeitraums (Standard: 24 Stunden), inklusive Dokumentliste, Signaturstatus und direkten Aktionsschaltflächen für Patientenmodus oder Gerätezuweisung. Die manuelle Fallnummerneingabe bleibt weiterhin verfügbar.
+
+### PR #37 - Interaktive PDF-Formulare: Inline-Ausfüllfunktion im Signaturworkflow
+
+PR #37 integriert die Ausfüllfunktion für interaktive Formulare direkt in den Signaturworkflow. Die KI erkennt ausfüllbare Dokumente (Anamnesebögen, Fragebögen, Checklisten); PDF-Formularfelder (AcroForms) haben Vorrang, ansonsten erkennt die Vision-KI Eingabebereiche. Eine transparente Eingabeebene über dem PDF ermöglicht die Dateneingabe per Tastatur oder Apple Pencil. Pflichtfelder werden ausschließlich serverseitig geprüft, Formulardaten werden mit Autosave gesichert und beim Unterschreiben serverseitig in das finale PDF eingebrannt. Das Original bleibt unverändert archiviert. Neu hinzugekommen sind Migration `006_forms.sql`, eine Feldtyp-Registry mit 14 Typen, die Admin-Sektion „Formulare" sowie neue Unit-Tests.
+
+### PR #38 - Migrationen idempotent machen
+
+PR #38 verhindert, dass `php database/migrate.php` bereits angewendete Migrationen erneut ausführt. Eine neue Tabelle `schema_migrations` zeichnet jede ausgeführte Migrationsdatei auf. Beim ersten Lauf auf einer bereits migrierten Datenbank werden vorhandene Schemamerkmale erkannt und ältere Migrationen als angewendet markiert, ohne sie erneut auszuführen.
+
+### PR #39 - Belehrungstext zur E-Mail-Einwilligung auf der Kiosk-Seite
+
+PR #39 ergänzt den Kiosk-Wizard um einen scrollbaren Datenschutz-Belehrungskasten unterhalb der E-Mail-Einwilligungs-Checkbox. Der Text folgt dem datenschutzrechtlichen Muster zu Art. 9 DSGVO (Risiken unverschlüsselter E-Mails, Widerrufsrecht, Freiwilligkeit). Klinik- und Ortsname werden aus den allgemeinen Einstellungen befüllt. Der Text ist im Admin-Bereich unter „Abschlussseite" pflegbar (Setting `kiosk.email_consent_notice`).
+
+### PR #40 - Freihandmodus: Freies Schreiben mit dem Stift im Kioskmodus
+
+PR #40 führt den Freihandmodus als Alternative zur KI-gestützten Formularanalyse ein. Patienten können im Kioskmodus mit dem Apple Pencil direkt auf dem gesamten Dokument schreiben; der Finger scrollt weiterhin. Hoch/Runter-Schaltflächen erleichtern das Blättern, ein Rückgängig-Button entfernt die letzte Stifteingabe. Beim Unterschreiben werden die Stifteingaben als transparente PNGs je Seite an den Server übertragen und per FPDI in das signierte PDF eingebrannt. Der Freihandmodus wird in der Admin-Sektion „Formulare" aktiviert und schließt das Formularfeld-Overlay sowie die Pflichtfeldprüfung aus.
+
+### PR #41 - Öffentliche Statusseite `/health` mit Ampellogik und 48-Stunden-Timeline
+
+PR #41 fügt eine öffentlich zugängliche Statusseite unter `/health` hinzu. Sie zeigt den Zustand aller Systemkomponenten (Datenbank, Vision-KI, Analyse-KI, SMTP, Speicherpfade) in einer Ampelübersicht und einer 48-Stunden-Timeline mit stündlichen Buckets. Verlaufsdaten werden in der neuen Tabelle `health_check_history` (Migration `007_health_history.sql`) gespeichert und nach 14 Tagen bereinigt. Ein JSON-Endpunkt `/health/data` ermöglicht die Anbindung externer Monitoring-Systeme; bei Fehlern wird HTTP 503 zurückgegeben.
+
+### PR #42 - Dashboard: KI-Kachel mit Analyse-Fortschritt und Notfall-Aktion
+
+PR #42 macht die KI-Kachel auf dem Dashboard interaktiv. Sobald Analysen laufen, ist die Kachel klickbar und öffnet einen Dialog mit den Originaldateinamen, bisherigen Laufzeiten und einem Fortschrittsbalken. Neben jedem Dokument erscheint eine Notfall-Schaltfläche: Sie verschiebt das Dokument sofort ins Clearing, damit es manuell zugeordnet werden kann, ohne auf das Ende der Analyse warten zu müssen. Der Hintergrundprozess prüft vor jedem Schreibvorgang, ob das Dokument bereits per Notfall verschoben wurde.
+
+### PR #43 - Bereits unterschriebene Dokumente nicht erneut im Kiosk vorlegen
+
+PR #43 stellt sicher, dass Dokumente mit Status `signed`, `sent` oder `archived` beim erneuten Laden einer Patientenmappe im Kioskmodus übersprungen werden. Sind alle Dokumente einer Fallnummer bereits unterschrieben, erscheint eine klare Fehlermeldung statt „Keine Dokumente gefunden". Doppelsignaturen werden dadurch technisch ausgeschlossen.
+
+### PR #44 - Kiosk: Lesebestätigung als Pflichtfeld vor Unterschrift erzwingen
+
+PR #44 blockiert das Weitergehen zur Unterschrift, solange die Checkbox „Ich bestätige, dass ich alle Dokumente gelesen habe" nicht gesetzt ist. Eine Fehlermeldung mit Fokussteuerung erscheint bei fehlender Bestätigung; sobald der Haken gesetzt wird, verschwindet sie. Die bestehende serverseitige Prüfung beim Absenden der Unterschrift bleibt als zweite Sicherung erhalten.
+
+### PR #45 - Belehrungsseite zum E-Mail-Versand bei Einwilligung ins PDF einfügen
+
+PR #45 bettet den Datenschutz-Belehrungstext für den E-Mail-Versand als eigene Seite in das signierte PDF ein. Die Seite wird nur bei Einwilligung zwischen Original-PDF und Abschlussseite eingefügt, sowohl im regulären FPDI-Pfad als auch im Ghostscript-Fallback. Kopf- und Fußblock wurden in gemeinsam genutzte Methoden `pageHeader()` und `pageFooter()` extrahiert, die Abschluss- und Belehrungsseite identisch verwenden.
 
 ## Weiterführende Dokumentation
 
