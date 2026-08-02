@@ -498,7 +498,23 @@
     }
 
     document.addEventListener("click", function (event) {
-        if (event.target.closest("[data-wizard-next]")) {
+        var nextTrigger = event.target.closest("[data-wizard-next]");
+        if (nextTrigger) {
+            // Pflichtfeld-Gate: ohne Lesebestätigung nicht zur Unterschrift.
+            var readConfirmed = document.getElementById("read-confirmed");
+            var readError = document.getElementById("read-confirmed-error");
+            if (readConfirmed && steps[currentStep] && steps[currentStep].contains(readConfirmed)) {
+                if (!readConfirmed.checked) {
+                    if (readError) {
+                        readError.classList.remove("hidden");
+                    }
+                    readConfirmed.focus();
+                    return;
+                }
+                if (readError) {
+                    readError.classList.add("hidden");
+                }
+            }
             showStep(currentStep + 1);
         }
         if (event.target.closest("[data-wizard-prev]")) {
@@ -571,6 +587,17 @@
     if (emailConsent && emailField) {
         emailConsent.addEventListener("change", function () {
             emailField.classList.toggle("hidden", !emailConsent.checked);
+        });
+    }
+
+    /* Lesebestätigung: Fehlermeldung ausblenden, sobald angehakt */
+    var readConfirmedInput = document.getElementById("read-confirmed");
+    if (readConfirmedInput) {
+        readConfirmedInput.addEventListener("change", function () {
+            var readError = document.getElementById("read-confirmed-error");
+            if (readError && readConfirmedInput.checked) {
+                readError.classList.add("hidden");
+            }
         });
     }
 
