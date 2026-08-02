@@ -183,6 +183,26 @@ final class DocumentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /**
+     * Noch nicht unterschriebene Dokumente einer Fallnummer (für die Kiosk-Mappe).
+     * Bereits signierte, versandte oder archivierte Dokumente werden dem
+     * Patienten nicht erneut zur Unterschrift vorgelegt.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function findUnsignedByCaseNumber(string $caseNumber): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM documents
+             WHERE case_number = :case_number
+               AND status NOT IN ('signed','sent','archived')
+             ORDER BY created_at"
+        );
+        $stmt->execute(['case_number' => $caseNumber]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     /** @param array<string,mixed> $data */
     public function updateAnalysis(int $id, array $data): void
     {

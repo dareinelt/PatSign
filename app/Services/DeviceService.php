@@ -126,8 +126,12 @@ final class DeviceService
             throw new \RuntimeException('Das Gerät hat bereits eine aktive Patientenmappe.');
         }
 
-        $documents = $this->documents->findByCaseNumber($caseNumber);
+        // Bereits unterschriebene Dokumente werden nicht erneut vorgelegt.
+        $documents = $this->documents->findUnsignedByCaseNumber($caseNumber);
         if ($documents === []) {
+            if ($this->documents->findByCaseNumber($caseNumber) !== []) {
+                throw new \InvalidArgumentException('Alle Dokumente dieser Fallnummer sind bereits unterschrieben.');
+            }
             throw new \InvalidArgumentException('Keine Dokumente zu dieser Fallnummer gefunden.');
         }
 
@@ -452,7 +456,8 @@ final class DeviceService
         $documents = [];
         foreach ($ids as $id) {
             $document = $this->documents->findById($id);
-            if ($document !== null) {
+            // Zwischenzeitlich unterschriebene Dokumente nicht erneut vorlegen.
+            if ($document !== null && !in_array((string) $document['status'], ['signed', 'sent', 'archived'], true)) {
                 $documents[] = $document;
             }
         }
