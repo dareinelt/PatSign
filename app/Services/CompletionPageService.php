@@ -168,6 +168,9 @@ final class CompletionPageService
                     $pdf->useTemplate($template);
                 }
             }
+            if ($emailConsent) {
+                $this->addEmailNoticePage($pdf, $vars);
+            }
             $this->addCompletionPage($pdf, $vars, $signatureData, $emailConsent);
             $pdf->Output('F', $outputPath);
         } catch (\Throwable $e) {
@@ -189,6 +192,9 @@ final class CompletionPageService
             @unlink($base);
         }
         $pdf = new Fpdi();
+        if ($emailConsent) {
+            $this->addEmailNoticePage($pdf, $vars);
+        }
         $this->addCompletionPage($pdf, $vars, $signatureData, $emailConsent);
         $pdf->Output('F', $pagePath);
 
@@ -213,6 +219,63 @@ final class CompletionPageService
         @unlink($pagePath);
     }
 
+    /**
+     * Belehrungsseite zum E-Mail-Versand: wird bei Einwilligung des
+     * Patienten zwischen Originaldokument und Abschlussseite eingefügt.
+     * Kopf- und Fußblock entsprechen der Abschlussseite.
+     *
+     * @param array<string,string> $vars
+     */
+    private function addEmailNoticePage(Fpdi $pdf, array $vars): void
+    {
+        $pdf->AddPage('P', 'A4');
+        $pdf->SetAutoPageBreak(false);
+        $pdf->SetMargins(20, 15, 20);
+
+        $this->pageHeader($pdf, $vars);
+
+        $pdf->SetY(55);
+        $pdf->SetFont('Helvetica', 'B', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->MultiCell(0, 6, $this->encode('Belehrung zum E-Mail-Versand'));
+        $pdf->Ln(2);
+        $pdf->SetFont('Helvetica', '', 10);
+        $notice = $this->settings->getString('kiosk.email_consent_notice', self::DEFAULT_KIOSK_EMAIL_NOTICE);
+        $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($notice, $vars)));
+
+        $this->pageFooter($pdf, $vars);
+    }
+
+    /**
+     * Kopfblock mit Patientendaten (Abschluss- und Belehrungsseite).
+     *
+     * @param array<string,string> $vars
+     */
+    private function pageHeader(Fpdi $pdf, array $vars): void
+    {
+        $pdf->SetY(15);
+        $pdf->SetFont('Helvetica', '', 9);
+        $pdf->SetTextColor(90, 90, 90);
+        $header = $this->settings->getString('completion.header_template', self::DEFAULT_HEADER);
+        $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($header, $vars)));
+    }
+
+    /**
+     * Fußblock mit Bearbeitungsinformationen (Abschluss- und Belehrungsseite).
+     *
+     * @param array<string,string> $vars
+     */
+    private function pageFooter(Fpdi $pdf, array $vars): void
+    {
+        $pdf->SetY(-48);
+        $pdf->SetFont('Helvetica', 'B', 9);
+        $pdf->SetTextColor(90, 90, 90);
+        $pdf->MultiCell(0, 5, $this->encode($this->settings->getString('completion.footer_title', self::DEFAULT_FOOTER_TITLE)));
+        $pdf->SetFont('Helvetica', '', 9);
+        $footer = $this->settings->getString('completion.footer_template', self::DEFAULT_FOOTER);
+        $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($footer, $vars)));
+    }
+
     /** @param array<string,string> $vars */
     private function addCompletionPage(Fpdi $pdf, array $vars, string $signatureData, bool $emailConsent): void
     {
@@ -220,12 +283,7 @@ final class CompletionPageService
         $pdf->SetAutoPageBreak(false);
         $pdf->SetMargins(20, 15, 20);
 
-        // Kopfblock mit Patientendaten
-        $pdf->SetY(15);
-        $pdf->SetFont('Helvetica', '', 9);
-        $pdf->SetTextColor(90, 90, 90);
-        $header = $this->settings->getString('completion.header_template', self::DEFAULT_HEADER);
-        $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($header, $vars)));
+        $this->pageHeader($pdf, $vars);
 
         // Fließtext
         $pdf->SetY(55);
@@ -270,14 +328,7 @@ final class CompletionPageService
 
         $pdf->Cell(0, 6, $this->encode('Ort: ' . $vars['ort'] . '    Datum: ' . $vars['datum']), 0, 1);
 
-        // Bearbeitungsinformationen
-        $pdf->SetY(-48);
-        $pdf->SetFont('Helvetica', 'B', 9);
-        $pdf->SetTextColor(90, 90, 90);
-        $pdf->MultiCell(0, 5, $this->encode($this->settings->getString('completion.footer_title', self::DEFAULT_FOOTER_TITLE)));
-        $pdf->SetFont('Helvetica', '', 9);
-        $footer = $this->settings->getString('completion.footer_template', self::DEFAULT_FOOTER);
-        $pdf->MultiCell(0, 5, $this->encode($this->renderTemplate($footer, $vars)));
+        $this->pageFooter($pdf, $vars);
     }
 
     /** Zeichnet eine Zeile mit Kontrollkästchen (angekreuzt oder leer). */
