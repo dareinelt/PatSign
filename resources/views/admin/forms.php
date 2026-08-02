@@ -18,6 +18,15 @@ ob_start();
         </div>
 
         <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="freehand_enabled" value="1"
+                    <?= $settings->getBool('forms.freehand_enabled', false) ? 'checked' : '' ?>>
+                Freies Schreiben mit dem Stift (Freihandmodus)
+            </label>
+            <span class="form-hint">Alternative zur Formularanalyse: Im Kiosk-Modus kann jederzeit auf dem gesamten Formular mit dem Apple Pencil geschrieben werden. Die Stifteingaben werden beim Unterschreiben in das Dokument übernommen. Formularfeld-Overlays werden dabei nicht angezeigt.</span>
+        </div>
+
+        <div class="form-group">
             <label for="forms-vision-model">Vision-Modell für Formularerkennung</label>
             <input id="forms-vision-model" name="vision_model" value="<?= e($settings->getString('forms.vision_model', '')) ?>" placeholder="Standard: Vision-Modell der KI-Einstellungen">
             <span class="form-hint">Optionales abweichendes Modell für die Erkennung von Eingabefeldern. Leer lassen, um das Vision-Modell aus den KI-Einstellungen zu verwenden.</span>

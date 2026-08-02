@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../partials/helpers.php';
 ob_start();
 ?>
-<div class="kiosk-shell" id="kiosk" data-csrf="<?= e($csrf) ?>" data-device-status="<?= e($deviceStatus) ?>">
+<div class="kiosk-shell" id="kiosk" data-csrf="<?= e($csrf) ?>" data-device-status="<?= e($deviceStatus) ?>" data-freehand="<?= !empty($freehandEnabled) ? '1' : '0' ?>">
     <header class="patient-header">
         <span class="clinic-name"><?= e($clinicName) ?></span>
         <div class="topbar-spacer"></div>
@@ -80,16 +80,34 @@ ob_start();
             <div class="doc-viewer">
                 <div class="doc-viewer-toolbar">
                     <span class="doc-viewer-title" id="doc-viewer-title">Dokument</span>
+                    <button type="button" class="btn btn-secondary hidden" id="ink-undo" aria-label="Letzte Stifteingabe rückgängig machen" disabled>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-undo"/></svg>
+                        Rückgängig
+                    </button>
                     <span class="text-muted text-sm" id="doc-counter"></span>
                 </div>
-                <div class="doc-viewer-frame" id="doc-frame" role="document" aria-label="Dokumentanzeige mit Blättern und Zoom"></div>
+                <div class="doc-viewer-body">
+                    <div class="doc-viewer-frame" id="doc-frame" role="document" aria-label="Dokumentanzeige mit Blättern und Zoom"></div>
+                    <div class="doc-scroll-controls" aria-label="Im Dokument scrollen">
+                        <button type="button" class="doc-scroll-btn" id="doc-scroll-up" aria-label="Nach oben scrollen">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-chevron-up"/></svg>
+                        </button>
+                        <button type="button" class="doc-scroll-btn" id="doc-scroll-down" aria-label="Nach unten scrollen">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="form-progress hidden" id="form-progress" aria-live="polite">
                 <span id="form-progress-label"></span>
                 <span class="form-progress-bar"><span class="form-progress-fill" id="form-progress-fill"></span></span>
             </div>
             <p class="text-muted text-sm text-center mt-2 mb-0">
-                Zum Vergrößern zwei Finger auseinanderziehen, zum Blättern wischen oder scrollen.
+                <?php if (!empty($freehandEnabled)): ?>
+                    Mit dem Stift können Sie direkt auf dem Dokument schreiben. Zum Blättern die Pfeiltasten nutzen, mit dem Finger wischen oder scrollen.
+                <?php else: ?>
+                    Zum Vergrößern zwei Finger auseinanderziehen, zum Blättern wischen oder scrollen.
+                <?php endif; ?>
             </p>
             <div class="wizard-nav">
                 <button type="button" class="btn btn-secondary btn-lg" id="doc-prev">
@@ -172,5 +190,5 @@ ob_start();
 <?php
 $content = ob_get_clean();
 $title = 'Signaturgerät – ' . ($clinicName ?? 'PatSign');
-$scripts = ['/js/pdf-viewer.js', '/js/form-overlay.js', '/js/kiosk.js'];
+$scripts = ['/js/pdf-viewer.js', '/js/form-overlay.js', '/js/ink-overlay.js', '/js/kiosk.js'];
 include __DIR__ . '/../partials/layout.php';

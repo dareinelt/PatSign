@@ -78,3 +78,60 @@
     border: 1px solid var(--color-border, #d7dee6);
     border-radius: var(--radius-md, 8px);
 }
+
+/* Dokumentanzeige: Scroll-Buttons neben dem Viewer */
+.doc-viewer-body {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.doc-viewer-body .doc-viewer-frame {
+    flex: 1;
+}
+
+.doc-scroll-controls {
+    position: absolute;
+    right: var(--space-3, 0.75rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    z-index: 10;
+}
+
+.doc-scroll-btn {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border, #d7dee6);
+    border-radius: 50%;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #1a2733);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.doc-scroll-btn:active {
+    background: var(--color-surface-alt, #f5f7fa);
+}
+
+.doc-scroll-btn .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Freihand-Ebene (Stift) über den PDF-Seiten */
+.ink-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    touch-action: none;
+}

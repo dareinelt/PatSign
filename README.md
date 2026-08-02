@@ -37,6 +37,7 @@ Ausfüllbare Dokumente (z. B. Anamnesebögen, Fragebögen, Selbstauskünfte, Che
 - **Vorbelegung**: bekannte Patientendaten (Name, Geburtsdatum, Fallnummer, aktuelles Datum) werden automatisch eingetragen und bleiben editierbar, sofern nicht gesperrt.
 - **Abschluss**: Beim Unterschreiben werden Original-PDF, Formularinhalte, Abschlussseite und Unterschrift serverseitig zu einem finalen PDF zusammengeführt. Das Original bleibt unverändert archiviert; die ausgefüllte Version erhält eine eigene Dokument-ID. Danach sind Formularinhalte eingefroren.
 - **Administration**: eigene Sektion „Formulare“ (Analyse aktivieren, Vision-Modell, Pflichtfeldprüfung, Autosave-Intervall, Handschrift/Tastatur, Vorbelegung).
+- **Freihandmodus (Alternative)**: Statt der Formularanalyse kann in der Sektion „Formulare“ das freie Schreiben mit dem Apple Pencil aktiviert werden. Im Kioskmodus liegt dann über jeder PDF-Seite eine Zeichenebene: Der Stift schreibt direkt auf dem gesamten Dokument, der Finger scrollt weiterhin. Hoch-/Runter-Buttons erleichtern das Blättern, ein „Rückgängig“-Button entfernt die letzte Stifteingabe. Beim Unterschreiben werden die Stifteingaben serverseitig in das finale PDF eingebrannt.
 
 ### iPad-Kioskmodus und Geräteverwaltung
 

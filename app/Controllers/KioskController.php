@@ -64,6 +64,7 @@ final class KioskController extends BaseController
             'deviceName' => (string) $device['name'],
             'deviceStatus' => (string) $device['status'],
             'emailConsentNotice' => $this->emailConsentNotice($clinicName),
+            'freehandEnabled' => $this->settings->getBool('forms.freehand_enabled', false),
         ]);
     }
 
@@ -232,12 +233,17 @@ final class KioskController extends BaseController
             return $this->json(['error' => 'Keine Dokumente gefunden.'], 404);
         }
 
+        // Freihandmodus: Stifteingaben ersetzen die Formularfeld-Erfassung.
+        $freehandEnabled = $this->settings->getBool('forms.freehand_enabled', false);
+        $inkByDocument = $freehandEnabled ? $this->parseInkData((string) $request->input('ink_data', '')) : [];
+
         // Interaktive Dokumente: Pflichtfelder serverseitig prüfen und die
         // ausgefüllte Version für die Zusammenführung erzeugen.
+        // Im Freihandmodus entfällt die Formularfeldprüfung.
         $formSources = [];
         foreach ($documents as $document) {
             $documentId = (int) $document['id'];
-            if (empty($document['is_interactive']) || !$this->forms->hasReadyForm($documentId)) {
+            if ($freehandEnabled || empty($document['is_interactive']) || !$this->forms->hasReadyForm($documentId)) {
                 continue;
             }
             try {
@@ -270,6 +276,23 @@ final class KioskController extends BaseController
             // Abschlussseite erzeugen und an das Dokument anhängen.
             $documentId = (int) $document['id'];
             $formSource = $formSources[$documentId] ?? null;
+            $sourcePdfPath = $formSource !== null ? $formSource['path'] : '';
+
+            // Freihandmodus: Stifteingaben seitenweise in das PDF einbrennen.
+            $inkFile = null;
+            $inkPages = $inkByDocument[$documentId] ?? [];
+            if ($inkPages !== []) {
+                try {
+                    $inkFile = $this->filledPdf->renderInk(
+                        $sourcePdfPath !== '' ? $sourcePdfPath : (string) $document['original_path'],
+                        $inkPages
+                    );
+                    $sourcePdfPath = $inkFile;
+                } catch (\Throwable) {
+                    // Stifteingaben dürfen die Signatur nicht verhindern.
+                }
+            }
+
             $paths = [
                 'signed_pdf_path' => $exportPath . '/' . $finalName,
                 'completion_page_path' => $exportPath . '/' . $finalName,
@@ -285,10 +308,14 @@ final class KioskController extends BaseController
                     'started_at' => (string) ($session['started_at'] ?? ($assignment['assigned_at'] ?? '')),
                     'signed_at' => $signedAt,
                     'final_name' => $finalName,
-                    'source_pdf_path' => $formSource !== null ? $formSource['path'] : '',
+                    'source_pdf_path' => $sourcePdfPath,
                 ]);
             } catch (\Throwable) {
                 // Fehler beim PDF-Aufbau darf die Signatur nicht verhindern.
+            }
+
+            if ($inkFile !== null) {
+                @unlink($inkFile);
             }
 
             // Formularinhalte nach der Unterschrift einfrieren.
@@ -345,6 +372,41 @@ final class KioskController extends BaseController
     {
         // Zuweisender Benutzer wurde beim Senden am Gerät hinterlegt.
         return (string) ($assignment['assigned_by_name'] ?? '');
+    }
+
+    /**
+     * Stifteingaben aus dem Request: JSON-Objekt document_id => (Seite => PNG-Data-URL).
+     *
+     * @return array<int,array<int,string>>
+     */
+    private function parseInkData(string $raw): array
+    {
+        if ($raw === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($decoded as $documentId => $pages) {
+            if (!is_array($pages)) {
+                continue;
+            }
+            foreach ($pages as $page => $dataUrl) {
+                $page = (int) $page;
+                if ($page < 1 || $page > 500 || !is_string($dataUrl)) {
+                    continue;
+                }
+                if (!str_starts_with($dataUrl, 'data:image/png;base64,')) {
+                    continue;
+                }
+                $result[(int) $documentId][$page] = $dataUrl;
+            }
+        }
+
+        return $result;
     }
 
     private function setDeviceCookies(string $uuid, string $token): void

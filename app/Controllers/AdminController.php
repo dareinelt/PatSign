@@ -455,6 +455,7 @@ final class AdminController extends BaseController
         return match ($section) {
             'forms' => [
                 'analysis_enabled' => 'forms.analysis_enabled',
+                'freehand_enabled' => 'forms.freehand_enabled',
                 'required_check_enabled' => 'forms.required_check_enabled',
                 'allow_handwriting' => 'forms.allow_handwriting',
                 'allow_keyboard' => 'forms.allow_keyboard',

@@ -57,6 +57,47 @@ final class FilledPdfService
         return ['path' => $outputPath, 'filled_document_id' => $filledDocumentId];
     }
 
+    /**
+     * Brennt Freihand-Stifteingaben (Freihandmodus) als transparente
+     * PNG-Ebenen seitenfüllend in eine Kopie des Quell-PDFs ein.
+     *
+     * @param string $sourcePath Quell-PDF (Original oder ausgefüllte Version)
+     * @param array<int,string> $pageImages Seitennummer => PNG-Data-URL
+     * @return string Pfad der erzeugten PDF-Datei
+     */
+    public function renderInk(string $sourcePath, array $pageImages): string
+    {
+        if (!is_dir($this->processedPath)) {
+            @mkdir($this->processedPath, 0775, true);
+        }
+        $outputPath = rtrim($this->processedPath, '/\\') . DIRECTORY_SEPARATOR . 'ink_' . FormResponseRepository::uuid() . '.pdf';
+
+        $pdf = new Fpdi();
+        $pdf->SetAutoPageBreak(false);
+        $pageCount = $pdf->setSourceFile($sourcePath);
+
+        for ($page = 1; $page <= $pageCount; $page++) {
+            $template = $pdf->importPage($page);
+            $size = $pdf->getTemplateSize($template);
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($template);
+
+            $dataUrl = $pageImages[$page] ?? null;
+            if ($dataUrl === null) {
+                continue;
+            }
+            $file = $this->imageFile($dataUrl);
+            if ($file !== null) {
+                $pdf->Image($file, 0, 0, (float) $size['width'], (float) $size['height'], 'PNG');
+                @unlink($file);
+            }
+        }
+
+        $pdf->Output('F', $outputPath);
+
+        return $outputPath;
+    }
+
     /** @param array<string,mixed> $field */
     private function drawField(Fpdi $pdf, array $field, float $pageWidth, float $pageHeight): void
     {
