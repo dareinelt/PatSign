@@ -48,6 +48,11 @@ ob_start();
             <label for="footer-template">Bearbeitungsinformationen</label>
             <textarea id="footer-template" name="footer_template" rows="6"><?= e($settings->getString('completion.footer_template', CompletionPageService::DEFAULT_FOOTER)) ?></textarea>
         </div>
+        <div class="form-group">
+            <label for="kiosk-email-notice">Belehrungstext E-Mail-Versand (Signaturgerät)</label>
+            <textarea id="kiosk-email-notice" name="kiosk_email_notice" rows="12"><?= e($settings->getString('kiosk.email_consent_notice', CompletionPageService::DEFAULT_KIOSK_EMAIL_NOTICE)) ?></textarea>
+            <span class="form-hint">Datenschutzhinweis, der Patienten auf dem Signaturgerät (/kiosk) bei der Einwilligung zum E-Mail-Versand angezeigt wird. Platzhalter <code>{klinik}</code> und <code>{ort}</code> werden automatisch befüllt.</span>
+        </div>
         <p class="form-hint">
             Verfügbare Platzhalter:
             <code>{nachname}</code>, <code>{vorname}</code>, <code>{geburtsdatum}</code>, <code>{fallnummer}</code>,

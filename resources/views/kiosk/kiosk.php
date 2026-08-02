@@ -116,6 +116,9 @@ ob_start();
                     <input type="checkbox" id="email-consent">
                     <span>Ich möchte meine Dokumente per E-Mail erhalten. <span class="text-muted">(optional)</span></span>
                 </label>
+                <div class="consent-notice" id="email-consent-notice" tabindex="0" aria-label="Datenschutzhinweis zum E-Mail-Versand">
+                    <?= nl2br(e($emailConsentNotice ?? '')) ?>
+                </div>
                 <div class="form-group hidden" id="email-field">
                     <label for="patient-email">Ihre E-Mail-Adresse</label>
                     <input type="email" id="patient-email" inputmode="email" autocomplete="email" placeholder="name@beispiel.de">
