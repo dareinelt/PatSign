@@ -200,6 +200,7 @@
     var documentIndex = 0;
     var hasSignature = false;
     var signatureCtx = null;
+    var freehandEnabled = kioskShell.getAttribute("data-freehand") === "1";
 
     function escapeHtml(value) {
         var div = document.createElement("div");
@@ -327,6 +328,7 @@
             }).join("");
         }
         resetSignature();
+        resetInk();
         showStep(0);
         showState("wizard");
         resizeCanvasSoon();
@@ -344,6 +346,65 @@
     var formProgress = document.getElementById("form-progress");
     var formProgressLabel = document.getElementById("form-progress-label");
     var formProgressFill = document.getElementById("form-progress-fill");
+
+    /* Freihand-Ebene (Stift): eine Overlay-Instanz je Dokument, damit die
+       Striche beim Blättern zwischen Dokumenten erhalten bleiben. */
+    var inkOverlays = {};
+    var inkUndoButton = document.getElementById("ink-undo");
+
+    function inkOverlayFor(docId) {
+        if (!freehandEnabled || !window.PatSignInkOverlay) {
+            return null;
+        }
+        if (!inkOverlays[docId]) {
+            inkOverlays[docId] = window.PatSignInkOverlay.create();
+            inkOverlays[docId].onChange(updateInkUndo);
+        }
+        return inkOverlays[docId];
+    }
+
+    function currentInkOverlay() {
+        if (!assignment || !assignment.documents[documentIndex]) {
+            return null;
+        }
+        return inkOverlays[assignment.documents[documentIndex].id] || null;
+    }
+
+    function updateInkUndo() {
+        if (!inkUndoButton) {
+            return;
+        }
+        var overlay = currentInkOverlay();
+        inkUndoButton.classList.toggle("hidden", !freehandEnabled);
+        inkUndoButton.disabled = !overlay || !overlay.hasStrokes();
+    }
+
+    function resetInk() {
+        Object.keys(inkOverlays).forEach(function (docId) {
+            inkOverlays[docId].detach();
+        });
+        inkOverlays = {};
+        updateInkUndo();
+    }
+
+    function collectInkData() {
+        var data = {};
+        Object.keys(inkOverlays).forEach(function (docId) {
+            if (inkOverlays[docId].hasStrokes()) {
+                data[docId] = inkOverlays[docId].exportPages();
+            }
+        });
+        return data;
+    }
+
+    if (inkUndoButton) {
+        inkUndoButton.addEventListener("click", function () {
+            var overlay = currentInkOverlay();
+            if (overlay) {
+                overlay.undo();
+            }
+        });
+    }
 
     function updateFormProgress(filled, total, complete) {
         if (!formProgress) {
@@ -371,7 +432,9 @@
         if (formProgress) {
             formProgress.classList.add("hidden");
         }
-        if (!doc.has_form || !window.PatSignFormOverlay) {
+        if (!doc.has_form || !window.PatSignFormOverlay || freehandEnabled) {
+            // Im Freihandmodus wird das Dokument direkt mit dem Stift
+            // beschrieben; die Formularfeld-Overlays entfallen.
             return Promise.resolve(null);
         }
         formOverlay = window.PatSignFormOverlay.create({
@@ -403,15 +466,23 @@
         setupFormOverlay(doc).then(function () {
             if (frame && window.PatSignPdfViewer) {
                 var overlay = formOverlay;
+                var ink = inkOverlayFor(doc.id);
+                if (ink) {
+                    ink.detach();
+                }
                 window.PatSignPdfViewer.render(frame, "/kiosk/document?id=" + encodeURIComponent(doc.id), {
                     onPage: function (pageNumber, wrapper) {
                         if (overlay && overlay === formOverlay) {
                             overlay.attachPage(pageNumber, wrapper);
                         }
+                        if (ink) {
+                            ink.attachPage(pageNumber, wrapper);
+                        }
                     }
                 });
             }
         });
+        updateInkUndo();
         if (docTitle) {
             docTitle.textContent = doc.document_type || "Dokument";
         }
@@ -474,6 +545,24 @@
         prevDocButton.addEventListener("click", function () {
             loadDocument(documentIndex - 1);
         });
+    }
+
+    /* Hoch/Runter-Buttons zum Scrollen im Dokument */
+    var scrollUpButton = document.getElementById("doc-scroll-up");
+    var scrollDownButton = document.getElementById("doc-scroll-down");
+
+    function scrollFrame(direction) {
+        if (!frame) {
+            return;
+        }
+        frame.scrollBy({ top: direction * frame.clientHeight * 0.8, behavior: "smooth" });
+    }
+
+    if (scrollUpButton) {
+        scrollUpButton.addEventListener("click", function () { scrollFrame(-1); });
+    }
+    if (scrollDownButton) {
+        scrollDownButton.addEventListener("click", function () { scrollFrame(1); });
     }
 
     /* E-Mail-Zustimmung */
@@ -637,6 +726,9 @@
             body.set("email_consent", consent ? "1" : "0");
             body.set("email", email);
             body.set("signature_data", canvas ? canvas.toDataURL("image/png") : "");
+            if (freehandEnabled) {
+                body.set("ink_data", JSON.stringify(collectInkData()));
+            }
 
             submitButton.disabled = true;
             submitButton.textContent = "Wird gespeichert …";
@@ -668,6 +760,7 @@
                     }
                     assignment = null;
                     sessionToken = "";
+                    resetInk();
                     showState("done");
                     // Nach kurzer Dankesanzeige automatisch in den Wartezustand zurückkehren.
                     window.setTimeout(function () {
