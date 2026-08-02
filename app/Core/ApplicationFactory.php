@@ -125,7 +125,8 @@ final class ApplicationFactory
             $c->get(LocalAiClient::class . '.analysis'),
             $c->get(PromptService::class),
             $c->get(CaseNumberExtractor::class),
-            $c->get(DocumentTypeRepository::class)
+            $c->get(DocumentTypeRepository::class),
+            $c->get(SettingsService::class)
         ));
         $container->singleton(PdfImportService::class, fn (Container $c) => new PdfImportService(
             $c->get(SettingsService::class)->getString('app.import_watch_path'),

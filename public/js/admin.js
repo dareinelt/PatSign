@@ -8,6 +8,13 @@
         window.PatSignUI.toast(flash.getAttribute("data-flash"), flash.getAttribute("data-flash-type") || "success");
     }
 
+    // Formulare mit data-autosubmit senden sich bei Änderungen selbst ab
+    document.querySelectorAll("form[data-autosubmit]").forEach(function (form) {
+        form.addEventListener("change", function () {
+            form.submit();
+        });
+    });
+
     // Bearbeiten-Buttons füllen das Formular im Dialog
     document.addEventListener("click", function (event) {
         const editButton = event.target.closest("[data-edit-item]");

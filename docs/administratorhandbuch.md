@@ -4,7 +4,7 @@
 - Benutzer- und Rollenverwaltung (DB-Tabellen `users`, `roles`)
 - Allgemein: Klinikname, Ort, Logo und Farben (`system_settings`, Schlüssel `general.*`)
 - Abschlussseite: Textbausteine der letzten Seite, die beim Signieren an jedes Dokument angehängt wird (`system_settings`, Schlüssel `completion.*`)
-- Dokumenttypen (`document_types`)
+- Dokumenttypen (`document_types`); optional kann eingestellt werden, dass nur Seite 1 eines Dokuments zur KI-Erkennung und -Analyse an die KI-Endpunkte gesendet wird (`system_settings`, Schlüssel `analysis.first_page_only`)
 - Promptverwaltung inkl. Versionierung (`prompts`)
 - KI-Endpunkte und Modellparameter (`.env`/`system_settings`)
 - SMTP und Netzwerkpfadkonfiguration (`system_settings`)
