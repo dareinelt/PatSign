@@ -127,9 +127,10 @@ ob_start();
             <p class="wizard-text">Bitte bestätigen Sie die folgenden Punkte:</p>
             <div class="stack wizard-narrow">
                 <label class="checkbox-field">
-                    <input type="checkbox" id="read-confirmed">
-                    <span>Ich bestätige, dass ich alle Dokumente gelesen habe.</span>
+                    <input type="checkbox" id="read-confirmed" required aria-required="true">
+                    <span>Ich bestätige, dass ich alle Dokumente gelesen habe. <span class="text-muted">(Pflichtfeld)</span></span>
                 </label>
+                <p class="form-error hidden" id="read-confirmed-error" role="alert">Bitte bestätigen Sie, dass Sie alle Dokumente gelesen haben.</p>
                 <label class="checkbox-field">
                     <input type="checkbox" id="email-consent">
                     <span>Ich möchte meine Dokumente per E-Mail erhalten. <span class="text-muted">(optional)</span></span>
