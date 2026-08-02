@@ -27,3 +27,4 @@ Nach erfolgreicher Unterschrift wird an jedes Dokument einzeln eine Abschlusssei
 - Der E-Mail-Versand wird als Kontrollkästchen dargestellt: Je nach Wunsch des Patienten ist „Versand gewünscht“ oder „kein Versand“ angekreuzt.
 - Klinikname und Ort werden unter *Administration → Allgemein* gepflegt und automatisch übernommen.
 - Die digitale Unterschrift des Patienten (Zeile „Digitale Signatur:“) sowie Ort und aktuelles Datum werden automatisch unterhalb des Bestätigungssatzes eingefügt.
+- Stimmt der Patient dem E-Mail-Versand zu, wird zusätzlich eine Belehrungsseite zwischen Originaldokument und Abschlussseite eingefügt. Sie enthält denselben Kopf- und Fußblock wie die Abschlussseite; ihr Inhalt ist der Text „Belehrungstext E-Mail-Versand (Signaturgerät)“ (Schlüssel `kiosk.email_consent_notice`).
