@@ -35,6 +35,17 @@ $eventLabels = [
     'device_session_started' => 'Gerätesitzung gestartet',
     'device_session_ended' => 'Gerätesitzung beendet',
     'device_signature_completed' => 'Unterschrift am Gerät abgeschlossen',
+    'template_created' => 'Dokumentvorlage angelegt',
+    'template_versioned' => 'Dokumentvorlage ersetzt (neue Version)',
+    'template_updated' => 'Dokumentvorlage aktualisiert',
+    'template_deleted' => 'Dokumentvorlage gelöscht',
+    'template_used' => 'Dokumentvorlage verwendet',
+    'catalog_category_created' => 'Katalog-Kategorie angelegt',
+    'catalog_category_updated' => 'Katalog-Kategorie umbenannt',
+    'catalog_category_deleted' => 'Katalog-Kategorie gelöscht',
+    'catalog_document_added' => 'Katalogdokument zur Mappe hinzugefügt',
+    'catalog_document_removed' => 'Dokument aus Mappe entfernt',
+    'folder_documents_reordered' => 'Dokumentreihenfolge geändert',
 ];
 
 $deviceAvailabilityMeta = [
@@ -306,7 +317,7 @@ ob_start();
     </div>
     <div class="dialog-body">
         <p class="form-hint mb-2" id="patient-folders-period"></p>
-        <div id="patient-folders-list">
+        <div id="patient-folders-list" data-csrf="<?= e($csrf) ?>">
             <p class="table-empty mb-0">Patientenmappen werden geladen …</p>
         </div>
     </div>
@@ -362,6 +373,32 @@ ob_start();
             <button type="submit" class="btn btn-primary" id="send-device-submit">Senden</button>
         </div>
     </form>
+</dialog>
+<dialog class="dialog dialog-wide" id="catalog-add-dialog" aria-labelledby="catalog-add-title">
+    <div class="dialog-header">
+        <h2 id="catalog-add-title">Dokument aus Katalog hinzufügen</h2>
+        <button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Dialog schließen">✕</button>
+    </div>
+    <div class="dialog-body">
+        <p class="form-hint mb-2" id="catalog-add-patient"></p>
+        <div class="form-group">
+            <label for="catalog-add-search" class="visually-hidden">Vorlagen durchsuchen</label>
+            <input id="catalog-add-search" type="search" placeholder="Vorlage suchen …">
+        </div>
+        <div class="form-group">
+            <label for="catalog-add-category" class="visually-hidden">Kategorie</label>
+            <select id="catalog-add-category">
+                <option value="">Alle Kategorien</option>
+            </select>
+        </div>
+        <div id="catalog-add-list">
+            <p class="table-empty mb-0">Vorlagen werden geladen …</p>
+        </div>
+    </div>
+    <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button>
+        <button type="button" class="btn btn-primary" id="catalog-add-submit" disabled>Hinzufügen</button>
+    </div>
 </dialog>
 
 <?php

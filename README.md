@@ -68,6 +68,17 @@ Die Geräteauthentifizierung nutzt UUIDs, gerätegebundene Tokens, gehashte Toke
 - Zugriff nur für Rollen `admin` und `operator`; alle Schritte werden revisionssicher in Audit-Log und Fallhistorie protokolliert
 - Konfigurierbar in der Administration: Konfidenzschwellwert, automatische Clearing-Zuordnung, temporäre Mappen, automatische Neuanalyse, maximale KI-Versuche
 
+### Dokumentenkatalog
+
+- Administratoren und die dedizierte Rolle `dokumentenmanagement` pflegen PDF-Vorlagen (Einwilligungen, Aufklärungsbögen, Datenschutzerklärungen) im Bereich *Administration → Dokumentenkatalog*
+- Metadaten je Vorlage: Bezeichnung, Beschreibung, Dokumenttyp, Kategorie; Vorschau und Download direkt aus der Verwaltung
+- Versionierung: Ersetzen erzeugt eine neue, unveränderliche Version – bereits verwendete Dokumente bleiben unverändert; Versionshistorie einsehbar
+- Vorlagen lassen sich deaktivieren oder archivieren; Löschen nur ohne Verwendungen
+- Platzhalter im Format `{{PLATZHALTER}}` (Fallnummer, Name, Geburtsdatum, Datum, Klinik, Mitarbeiter …) werden beim Hochladen automatisch erkannt und beim Hinzufügen serverseitig mit den Patientendaten befüllt
+- Personal fügt Katalogdokumente direkt im Dashboard-Mappen-Overlay hinzu (Suche, Kategoriefilter, Vorschau, Mehrfachauswahl); die Dokumente sind sofort „Bereit zur Unterschrift“ und für Patienten nicht von importierten Dokumenten unterscheidbar
+- Reihenfolge der Mappe per Pfeiltasten oder Drag & Drop änderbar; nicht unterschriebene Dokumente können wieder entfernt werden
+- Vollständige Audit-Protokollierung (Anlegen, Versionieren, Verwenden, Entfernen, Umsortieren)
+
 ### Administration
 
 Der Administrationsbereich unter `/admin` ist rollenbeschränkt und enthält die Module:
@@ -75,6 +86,7 @@ Der Administrationsbereich unter `/admin` ist rollenbeschränkt und enthält die
 - Allgemein
 - KI
 - Dokumenttypen
+- Dokumentenkatalog
 - Import
 - Export
 - SMTP

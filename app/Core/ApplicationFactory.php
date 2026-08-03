@@ -9,6 +9,7 @@ use App\Controllers\AuthController;
 use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
+use App\Controllers\DocumentCatalogController;
 use App\Controllers\DocumentController;
 use App\Controllers\FormController;
 use App\Controllers\HealthController;
@@ -27,6 +28,7 @@ use App\Repositories\DeviceHistoryRepository;
 use App\Repositories\DeviceRepository;
 use App\Repositories\DeviceSessionRepository;
 use App\Repositories\DocumentRepository;
+use App\Repositories\DocumentTemplateRepository;
 use App\Repositories\DocumentTypeRepository;
 use App\Repositories\FormFieldRepository;
 use App\Repositories\FormFieldTypeRepository;
@@ -45,6 +47,8 @@ use App\Security\DeviceTokenManager;
 use App\Security\PasswordHasher;
 use App\Services\AuthService;
 use App\Services\CaseNumberExtractor;
+use App\Services\Catalog\DocumentCatalogService;
+use App\Services\Catalog\PdfPlaceholderService;
 use App\Services\ClearingService;
 use App\Services\CompletionPageService;
 use App\Services\DeviceService;
@@ -170,6 +174,21 @@ final class ApplicationFactory
             $c->get(SettingsService::class)
         ));
         $container->singleton(FilledPdfService::class, fn () => new FilledPdfService($basePath . '/storage/processed'));
+
+        $container->singleton(DocumentTemplateRepository::class, fn (Container $c) => new DocumentTemplateRepository($c->get(\PDO::class)));
+        $container->singleton(PdfPlaceholderService::class, fn () => new PdfPlaceholderService());
+        $container->singleton(DocumentCatalogService::class, fn (Container $c) => new DocumentCatalogService(
+            $c->get(DocumentTemplateRepository::class),
+            $c->get(DocumentRepository::class),
+            $c->get(PatientFolderRepository::class),
+            $c->get(PdfPlaceholderService::class),
+            $c->get(AuditLogRepository::class),
+            $c->get(SettingsService::class),
+            (int) $c->get(Config::class)->get('app.max_upload_bytes'),
+            $basePath . '/storage/templates',
+            $basePath . '/storage/processed',
+            $basePath
+        ));
 
         $container->singleton(ClearingCaseRepository::class, fn (Container $c) => new ClearingCaseRepository($c->get(\PDO::class)));
         $container->singleton(PatientFolderRepository::class, fn (Container $c) => new PatientFolderRepository($c->get(\PDO::class)));
@@ -298,9 +317,17 @@ final class ApplicationFactory
             $container->get(SystemStatusService::class),
             $container->get(HealthCheckHistoryRepository::class)
         );
+        $documentCatalogController = new DocumentCatalogController(
+            $container->get(View::class),
+            $container->get(DocumentCatalogService::class),
+            $container->get(DocumentTemplateRepository::class),
+            $container->get(DocumentTypeRepository::class),
+            $container->get(SettingsService::class),
+            $container->get(CsrfTokenManager::class)
+        );
 
         $router = new Router();
-        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController, $formController, $healthController);
+        (require $basePath . '/routes/web.php')($router, $authController, $documentController, $adminController, $dashboardController, $patientController, $kioskController, $deviceController, $notificationController, $clearingController, $formController, $healthController, $documentCatalogController);
 
         $middleware = [
             new SecurityHeadersMiddleware($container->get(Config::class)),

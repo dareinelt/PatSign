@@ -23,12 +23,13 @@ use App\Services\DeviceService;
 final class AdminController extends BaseController
 {
     /** @var array<string,string> */
-    private const SECTIONS = [
+    public const SECTIONS = [
         'general' => 'Allgemein',
         'completion-page' => 'Abschlussseite',
         'ai' => 'KI',
         'forms' => 'Formulare',
         'document-types' => 'Dokumenttypen',
+        'document-catalog' => 'Dokumentenkatalog',
         'import' => 'Import',
         'export' => 'Export',
         'smtp' => 'SMTP',
@@ -39,6 +40,24 @@ final class AdminController extends BaseController
         'devices' => 'Geräteverwaltung',
         'system' => 'Systemeinstellungen',
     ];
+
+    /**
+     * Sichtbare Admin-Bereiche je Rolle: Administratoren sehen alles,
+     * die Rolle "dokumentenmanagement" ausschließlich den Dokumentenkatalog.
+     *
+     * @return array<string,string>
+     */
+    public static function sectionsForRole(string $role): array
+    {
+        if ($role === 'admin') {
+            return self::SECTIONS;
+        }
+        if ($role === 'dokumentenmanagement') {
+            return ['document-catalog' => self::SECTIONS['document-catalog']];
+        }
+
+        return [];
+    }
 
     public function __construct(
         View $view,
@@ -67,7 +86,7 @@ final class AdminController extends BaseController
             'csrf' => $this->csrf->token(),
             'user' => $_SESSION['auth_user'] ?? [],
             'section' => $section,
-            'sections' => self::SECTIONS,
+            'sections' => self::sectionsForRole((string) ($_SESSION['auth_user']['role'] ?? '')),
             'sectionTitle' => self::SECTIONS[$section],
             'settings' => $this->settings,
             'flash' => $this->pullFlash(),
@@ -426,6 +445,9 @@ final class AdminController extends BaseController
             'document-types' => [
                 'first_page_only' => 'analysis.first_page_only',
             ],
+            'document-catalog' => [
+                'placeholder_default' => 'catalog.placeholder_default',
+            ],
             'smtp' => [
                 'host' => 'mail.host',
                 'port' => 'mail.port',
@@ -467,6 +489,7 @@ final class AdminController extends BaseController
             ],
             'import' => ['auto_import' => 'import.auto_import'],
             'document-types' => ['first_page_only' => 'analysis.first_page_only'],
+            'document-catalog' => ['validation_enabled' => 'catalog.validation_enabled'],
             'export' => ['pdfa_enabled' => 'export.pdfa_enabled'],
             'clearing' => [
                 'auto_clearing_enabled' => 'clearing.auto_clearing_enabled',

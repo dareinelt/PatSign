@@ -19,6 +19,26 @@
 - `GET /devices/overview` Geräteübersicht (JSON, für Dashboard)
 - `POST /devices/assign` Patientenmappe an Gerät senden
 
+## Dokumentenkatalog
+
+Administration (Rollen `admin` und `dokumentenmanagement`):
+
+- `GET /admin/document-catalog` Katalogverwaltung (Vorlagenübersicht, Kategorien, Platzhalter-Hilfe)
+- `POST /admin/document-catalog/save` Neue Vorlage anlegen (multipart, PDF wird serverseitig validiert, Platzhalter automatisch erkannt)
+- `POST /admin/document-catalog/update` Metadaten bearbeiten (Bezeichnung, Beschreibung, Dokumenttyp, Kategorie)
+- `POST /admin/document-catalog/replace` Vorlage ersetzen → neue unveränderliche Version; bereits verwendete Dokumente bleiben unverändert
+- `POST /admin/document-catalog/status` Statusaktion (`activate`/`deactivate`/`archive`/`restore`/`delete`; Löschen nur ohne Verwendungen)
+- `POST /admin/document-catalog/categories` Kategorie anlegen/umbenennen/löschen
+- `GET /admin/document-catalog/file?id=&version=&mode=` Vorschau/Download einer Vorlagenversion (authentifizierte Auslieferung)
+
+Personal-Dashboard (angemeldete Benutzer):
+
+- `GET /catalog/templates?q=&category_id=` Aktive Vorlagen für die Auswahl (JSON, Suche + Kategoriefilter)
+- `GET /catalog/preview?id=` Vorschau der aktuellen Vorlagenversion
+- `POST /catalog/add` Vorlagen personalisiert zur Patientenmappe hinzufügen (`case_number`, `template_ids[]`; Platzhalter werden serverseitig befüllt, Dokument erhält Status `ready`)
+- `POST /catalog/remove` Dokument aus Mappe entfernen (`document_id`; nur nicht unterschriebene Dokumente)
+- `POST /catalog/reorder` Dokumentreihenfolge der Mappe speichern (`case_number`, `order[]`; bestimmt die Reihenfolge in der Patientenansicht)
+
 ## Formular-Endpunkte Patientenmodus (erfordern aktive Patientensitzung; Dokument muss zur Fallnummer gehören)
 
 - `GET|POST /patient/form?document_id=` Formularstruktur abrufen (Felder mit relativen Koordinaten 0–1, gespeicherte Werte, Vorbelegung, Konfiguration)

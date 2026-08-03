@@ -11,7 +11,8 @@ use App\Core\Response;
  * Pfadbasierte Zugriffskontrolle:
  * - Öffentliche Pfade: Login, Healthcheck und statische Fehlerseiten
  * - Patientenpfade: erfordern eine durch das Personal gestartete Patientensitzung
- * - Adminpfade: erfordern die Rolle "admin"
+ * - Adminpfade: erfordern die Rolle "admin"; der Dokumentenkatalog zusätzlich
+ *   die Rolle "dokumentenmanagement" (ohne Zugriff auf weitere Adminbereiche)
  * - Alle übrigen Pfade: erfordern einen angemeldeten Benutzer
  */
 final class RouteGuardMiddleware
@@ -45,8 +46,12 @@ final class RouteGuardMiddleware
             return Response::redirect('/login');
         }
 
-        if (str_starts_with($path, '/admin') && ($user['role'] ?? '') !== 'admin') {
-            return new Response('Zugriff verweigert', 403, ['Content-Type' => 'text/plain; charset=utf-8']);
+        if (str_starts_with($path, '/admin')) {
+            $role = (string) ($user['role'] ?? '');
+            $isCatalogPath = $path === '/admin/document-catalog' || str_starts_with($path, '/admin/document-catalog/');
+            if ($role !== 'admin' && !($isCatalogPath && $role === 'dokumentenmanagement')) {
+                return new Response('Zugriff verweigert', 403, ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
         }
 
         return $next($request);
