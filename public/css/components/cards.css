@@ -24,6 +24,41 @@
     padding: var(--space-4);
 }
 
+/* Einklappbare Karten */
+.card-collapse-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    background: none;
+    border: none;
+    border-radius: var(--radius-lg);
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.card-collapse-toggle:hover {
+    color: var(--color-text);
+    background: var(--color-border);
+}
+
+.card-collapse-toggle .icon {
+    transition: transform 0.2s ease;
+}
+
+.card.is-collapsed .card-collapse-toggle .icon {
+    transform: rotate(-90deg);
+}
+
+.card.is-collapsed .card-header {
+    margin-bottom: 0;
+}
+
+.card.is-collapsed .card-collapsible-body {
+    display: none;
+}
+
 /* Kennzahlkarten */
 .stat-card {
     display: flex;

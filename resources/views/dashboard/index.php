@@ -121,13 +121,17 @@ ob_start();
 
     <div class="dashboard-grid">
         <?php if ($canClearing): ?>
-            <section class="card col-span-12" aria-label="Clearing">
+            <section class="card col-span-12" aria-label="Clearing" id="clearing-section">
                 <div class="card-header">
                     <h2>Clearing</h2>
                     <span class="badge <?= ((int) ($clearingStats['open_count'] ?? 0)) > 0 ? 'badge-warning' : 'badge-success' ?>">
                         <?= (int) ($clearingStats['open_count'] ?? 0) ?> offen
                     </span>
+                    <button type="button" class="card-collapse-toggle" id="clearing-toggle" aria-expanded="true" aria-controls="clearing-body" aria-label="Clearing-Bereich ein- oder ausklappen">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+                    </button>
                 </div>
+                <div id="clearing-body" class="card-collapsible-body">
                 <div class="grid grid-4">
                     <div class="stat-card <?= ((int) ($clearingStats['open_count'] ?? 0)) > 0 ? 'is-error' : '' ?>">
                         <span class="stat-value"><?= (int) ($clearingStats['open_count'] ?? 0) ?></span>
@@ -172,6 +176,7 @@ ob_start();
                         <svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>
                         Clearing öffnen
                     </a>
+                </div>
                 </div>
             </section>
         <?php endif; ?>
