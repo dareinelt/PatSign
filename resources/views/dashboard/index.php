@@ -323,11 +323,44 @@ ob_start();
     </div>
     <div class="dialog-footer">
         <button type="button" class="btn btn-secondary" data-dialog-close>Schließen</button>
+        <button type="button" class="btn btn-secondary" id="patient-folders-create">Neue Mappe anlegen</button>
         <button type="button" class="btn btn-primary" id="patient-folders-manual">Fallnummer manuell eingeben</button>
     </div>
     <form method="post" action="/patient/start" id="patient-folders-start-form" hidden>
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="case_number" id="patient-folders-start-case" value="">
+    </form>
+</dialog>
+<dialog class="dialog" id="folder-create-dialog" aria-labelledby="folder-create-title">
+    <form id="folder-create-form">
+        <div class="dialog-header">
+            <h2 id="folder-create-title">Neue Patientenmappe anlegen</h2>
+            <button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Dialog schließen">✕</button>
+        </div>
+        <div class="dialog-body">
+            <p class="form-hint mb-2">Legt eine Patientenmappe ohne importierte Dokumente an. Anschließend können direkt Vorlagen aus dem Dokumentenkatalog hinzugefügt werden.</p>
+            <div class="form-group">
+                <label for="folder-create-last-name">Nachname</label>
+                <input id="folder-create-last-name" name="last_name" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+                <label for="folder-create-first-name">Vorname</label>
+                <input id="folder-create-first-name" name="first_name" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+                <label for="folder-create-birth-date">Geburtsdatum</label>
+                <input id="folder-create-birth-date" name="birth_date" type="date" required>
+            </div>
+            <div class="form-group">
+                <label for="folder-create-case-number">Fallnummer (optional)</label>
+                <input id="folder-create-case-number" name="case_number" inputmode="numeric" placeholder="z. B. 92612345">
+                <span class="form-hint">Ohne Fallnummer wird eine temporäre Mappe angelegt; die endgültige Fallnummer kann später im Clearing nachgetragen werden.</span>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button>
+            <button type="submit" class="btn btn-primary" id="folder-create-submit">Mappe anlegen</button>
+        </div>
     </form>
 </dialog>
 <dialog class="dialog" id="patient-start-dialog" aria-labelledby="patient-start-title">

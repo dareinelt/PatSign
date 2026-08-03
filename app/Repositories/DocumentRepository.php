@@ -133,22 +133,35 @@ final class DocumentRepository
      */
     public function unsignedFolders(int $hours, int $limit = 50): array
     {
-        $sql = "SELECT case_number, MAX(last_name) AS last_name, MAX(first_name) AS first_name,
-                       MAX(birth_date) AS birth_date,
-                       COUNT(*) AS document_count,
-                       SUM(status IN ('signed','sent','archived')) AS done_count,
-                       SUM(status = 'error') AS error_count,
-                       SUM(status IN ('ready','analyzed')) AS ready_count,
-                       MAX(updated_at) AS updated_at
-                FROM documents
-                WHERE case_number IS NOT NULL
-                GROUP BY case_number
-                HAVING done_count < document_count
-                       AND MAX(updated_at) >= (NOW() - INTERVAL :hours HOUR)
+        $sql = "SELECT case_number, last_name, first_name, birth_date, document_count,
+                       done_count, error_count, ready_count, updated_at
+                FROM (
+                    SELECT case_number, MAX(last_name) AS last_name, MAX(first_name) AS first_name,
+                           MAX(birth_date) AS birth_date,
+                           COUNT(*) AS document_count,
+                           SUM(status IN ('signed','sent','archived')) AS done_count,
+                           SUM(status = 'error') AS error_count,
+                           SUM(status IN ('ready','analyzed')) AS ready_count,
+                           MAX(updated_at) AS updated_at
+                    FROM documents
+                    WHERE case_number IS NOT NULL
+                    GROUP BY case_number
+                    HAVING done_count < document_count
+                           AND MAX(updated_at) >= (NOW() - INTERVAL :hours HOUR)
+                    UNION ALL
+                    -- Manuell angelegte Mappen ohne Dokumente ebenfalls anzeigen
+                    SELECT pf.case_number, pf.last_name, pf.first_name, pf.birth_date,
+                           0, 0, 0, 0, pf.updated_at
+                    FROM patient_folders pf
+                    WHERE pf.case_number IS NOT NULL
+                          AND pf.updated_at >= (NOW() - INTERVAL :hours_empty HOUR)
+                          AND NOT EXISTS (SELECT 1 FROM documents dx WHERE dx.case_number = pf.case_number)
+                ) folders
                 ORDER BY updated_at DESC
                 LIMIT :limit";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue('hours', $hours, PDO::PARAM_INT);
+        $stmt->bindValue('hours_empty', $hours, PDO::PARAM_INT);
         $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 

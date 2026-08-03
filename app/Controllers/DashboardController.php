@@ -125,10 +125,49 @@ final class DashboardController extends BaseController
     }
 
     /**
+     * Legt eine Patientenmappe manuell an (ohne importierte Dokumente), damit
+     * anschließend direkt Vorlagen aus dem Dokumentenkatalog hinzugefügt
+     * werden können. Ohne Fallnummer entsteht eine temporäre Mappe.
+     */
+    public function createFolder(Request $request): Response
+    {
+        $userId = isset($_SESSION['auth_user']['id']) ? (int) $_SESSION['auth_user']['id'] : null;
+
+        try {
+            $folder = $this->clearing->assignToNewFolder(
+                [],
+                [
+                    'case_number' => $request->input('case_number', ''),
+                    'first_name' => $request->input('first_name', ''),
+                    'last_name' => $request->input('last_name', ''),
+                    'birth_date' => $request->input('birth_date', ''),
+                ],
+                trim((string) $request->input('case_number', '')) === '',
+                $userId
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            return $this->json(['error' => 'Patientenmappe konnte nicht angelegt werden.'], 500);
+        }
+
+        $temporary = (int) ($folder['is_temporary'] ?? 0) === 1;
+
+        return $this->json([
+            'message' => ($temporary ? 'Temporäre Patientenmappe' : 'Patientenmappe') . ' ' . (string) ($folder['case_number'] ?? '') . ' angelegt.',
+            'folder' => [
+                'case_number' => (string) ($folder['case_number'] ?? ''),
+                'first_name' => (string) ($folder['first_name'] ?? ''),
+                'last_name' => (string) ($folder['last_name'] ?? ''),
+                'is_temporary' => $temporary,
+            ],
+        ]);
+    }
+
+    /**
      * Notfall: überspringt die KI-Analyse und verschiebt das Dokument direkt
      * ins Clearing zur manuellen Zuordnung.
-     */
-    public function emergency(Request $request): Response
+     */    public function emergency(Request $request): Response
     {
         $id = (int) $request->input('document_id');
         $document = $this->documents->findById($id);

@@ -7,6 +7,12 @@
 5. Signatur inkl. optionaler E-Mail-Zustimmung erfassen
 6. Abschlussseite erzeugen und Gesamt-PDF speichern
 
+## Patientenmappe manuell anlegen
+
+1. Im Dashboard die Kachel „Patientenmappen“ öffnen und „Neue Mappe anlegen“ wählen.
+2. Nachname, Vorname und Geburtsdatum eingeben; die Fallnummer ist optional – ohne Fallnummer wird eine temporäre Mappe (T-Nummer) angelegt, die endgültige Fallnummer kann später im Clearing nachgetragen werden.
+3. Nach dem Anlegen öffnet sich direkt der Dokumentenkatalog, um der neuen Mappe Dokumente/Vorlagen hinzuzufügen.
+
 ## Dokumente aus dem Katalog zur Patientenmappe hinzufügen
 
 1. Im Dashboard die Kachel „Patientenmappen“ öffnen und beim gewünschten Patienten „Dokument hinzufügen“ wählen.
