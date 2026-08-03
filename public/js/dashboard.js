@@ -701,4 +701,24 @@
                 });
         });
     }
+
+    const clearingSection = document.getElementById("clearing-section");
+    const clearingToggle = document.getElementById("clearing-toggle");
+    if (clearingSection && clearingToggle) {
+        const storageKey = "patsign.dashboard.clearingCollapsed";
+        function setCollapsed(collapsed) {
+            clearingSection.classList.toggle("is-collapsed", collapsed);
+            clearingToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        }
+        try {
+            setCollapsed(window.localStorage.getItem(storageKey) === "1");
+        } catch (e) { /* localStorage nicht verfügbar */ }
+        clearingToggle.addEventListener("click", function () {
+            const collapsed = !clearingSection.classList.contains("is-collapsed");
+            setCollapsed(collapsed);
+            try {
+                window.localStorage.setItem(storageKey, collapsed ? "1" : "0");
+            } catch (e) { /* localStorage nicht verfügbar */ }
+        });
+    }
 })();
