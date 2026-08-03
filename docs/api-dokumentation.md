@@ -33,6 +33,7 @@ Administration (Rollen `admin` und `dokumentenmanagement`):
 
 Personal-Dashboard (angemeldete Benutzer):
 
+- `POST /dashboard/folder` Patientenmappe manuell anlegen (`last_name`, `first_name`, `birth_date`; `case_number` optional – ohne Fallnummer entsteht eine temporäre Mappe)
 - `GET /catalog/templates?q=&category_id=` Aktive Vorlagen für die Auswahl (JSON, Suche + Kategoriefilter)
 - `GET /catalog/preview?id=` Vorschau der aktuellen Vorlagenversion
 - `POST /catalog/add` Vorlagen personalisiert zur Patientenmappe hinzufügen (`case_number`, `template_ids[]`; Platzhalter werden serverseitig befüllt, Dokument erhält Status `ready`)

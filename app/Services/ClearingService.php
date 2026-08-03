@@ -315,6 +315,10 @@ final class ClearingService
             throw new InvalidArgumentException('Ungültige Fallnummer.');
         }
 
+        if ($this->folders->findByCaseNumber($caseNumber) !== null) {
+            throw new InvalidArgumentException('Zu dieser Fallnummer existiert bereits eine Patientenmappe.');
+        }
+
         $folderId = $this->folders->create([
             'folder_uuid' => $this->uuid(),
             'case_number' => $caseNumber,

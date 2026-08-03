@@ -48,6 +48,7 @@ return static function (
     $router->get('/dashboard/signed/document', static fn (Request $request) => $dashboard->signedDocument($request));
     $router->get('/dashboard/search', static fn (Request $request) => $dashboard->search($request));
     $router->get('/dashboard/folders', static fn () => $dashboard->folders());
+    $router->post('/dashboard/folder', static fn (Request $request) => $dashboard->createFolder($request));
     $router->get('/dashboard/analyzing', static fn () => $dashboard->analyzing());
     $router->post('/dashboard/emergency', static fn (Request $request) => $dashboard->emergency($request));
 

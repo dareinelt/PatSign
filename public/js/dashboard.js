@@ -387,6 +387,60 @@
             });
     }
 
+    function openCatalogDialog(caseNumber, patientName) {
+        catalogCase = caseNumber || "";
+        if (catalogPatient) {
+            catalogPatient.textContent = "Patientenmappe: " + (patientName || "") + " · Fallnummer " + catalogCase;
+        }
+        if (catalogSearch) {
+            catalogSearch.value = "";
+        }
+        if (catalogCategory) {
+            catalogCategory.value = "";
+        }
+        window.PatSignUI.openDialog("catalog-add-dialog");
+        loadCatalogTemplates();
+    }
+
+    /* Neue Patientenmappe manuell anlegen, danach direkt Katalogdokumente hinzufügen */
+    const folderCreateButton = document.getElementById("patient-folders-create");
+    const folderCreateForm = document.getElementById("folder-create-form");
+    const folderCreateSubmit = document.getElementById("folder-create-submit");
+
+    if (folderCreateButton && folderCreateForm) {
+        folderCreateButton.addEventListener("click", function () {
+            window.PatSignUI.closeDialog("patient-folders-dialog");
+            folderCreateForm.reset();
+            window.PatSignUI.openDialog("folder-create-dialog");
+        });
+    }
+
+    if (folderCreateForm) {
+        folderCreateForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            const params = new URLSearchParams(new FormData(folderCreateForm));
+            if (folderCreateSubmit) {
+                folderCreateSubmit.disabled = true;
+            }
+            postForm("/dashboard/folder", params)
+                .then(function (data) {
+                    window.PatSignUI.toast(data.message || "Patientenmappe angelegt.", "success");
+                    window.PatSignUI.closeDialog("folder-create-dialog");
+                    const folder = data.folder || {};
+                    const name = ((folder.last_name || "") + ", " + (folder.first_name || "")).replace(/^, |, $/g, "") || "Unbekannt";
+                    openCatalogDialog(folder.case_number || "", name);
+                })
+                .catch(function (error) {
+                    window.PatSignUI.toast(error.message, "error");
+                })
+                .finally(function () {
+                    if (folderCreateSubmit) {
+                        folderCreateSubmit.disabled = false;
+                    }
+                });
+        });
+    }
+
     if (catalogSearch) {
         catalogSearch.addEventListener("input", function () {
             window.clearTimeout(catalogSearchTimer);
@@ -450,19 +504,10 @@
         foldersList.addEventListener("click", function (event) {
             const addTrigger = event.target.closest("[data-catalog-add]");
             if (addTrigger) {
-                catalogCase = addTrigger.getAttribute("data-case-number") || "";
-                if (catalogPatient) {
-                    catalogPatient.textContent = "Patientenmappe: " +
-                        (addTrigger.getAttribute("data-patient-name") || "") + " · Fallnummer " + catalogCase;
-                }
-                if (catalogSearch) {
-                    catalogSearch.value = "";
-                }
-                if (catalogCategory) {
-                    catalogCategory.value = "";
-                }
-                window.PatSignUI.openDialog("catalog-add-dialog");
-                loadCatalogTemplates();
+                openCatalogDialog(
+                    addTrigger.getAttribute("data-case-number") || "",
+                    addTrigger.getAttribute("data-patient-name") || ""
+                );
                 return;
             }
 
