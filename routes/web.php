@@ -7,6 +7,7 @@ use App\Controllers\AuthController;
 use App\Controllers\ClearingController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeviceController;
+use App\Controllers\DocumentCatalogController;
 use App\Controllers\DocumentController;
 use App\Controllers\FormController;
 use App\Controllers\HealthController;
@@ -28,7 +29,8 @@ return static function (
     NotificationController $notifications,
     ClearingController $clearing,
     FormController $forms,
-    HealthController $health
+    HealthController $health,
+    DocumentCatalogController $catalog
 ): void {
     $router->get('/', static fn () => \App\Core\Response::redirect('/dashboard'));
     $router->get('/login', static fn () => $auth->showLogin());
@@ -126,4 +128,20 @@ return static function (
     $router->post('/admin/users', static fn (Request $request) => $admin->saveUser($request));
     $router->post('/admin/roles', static fn (Request $request) => $admin->saveRole($request));
     $router->post('/admin/prompts', static fn (Request $request) => $admin->updatePrompt($request));
+
+    // Dokumentenkatalog (Administration: Rollen admin + dokumentenmanagement)
+    $router->get('/admin/document-catalog', static fn () => $catalog->adminIndex());
+    $router->get('/admin/document-catalog/file', static fn (Request $request) => $catalog->adminFile($request));
+    $router->post('/admin/document-catalog/save', static fn (Request $request) => $catalog->save($request));
+    $router->post('/admin/document-catalog/update', static fn (Request $request) => $catalog->update($request));
+    $router->post('/admin/document-catalog/replace', static fn (Request $request) => $catalog->replace($request));
+    $router->post('/admin/document-catalog/status', static fn (Request $request) => $catalog->status($request));
+    $router->post('/admin/document-catalog/categories', static fn (Request $request) => $catalog->saveCategory($request));
+
+    // Dokumentenkatalog (medizinisches Personal: Dokumente zur Patientenmappe)
+    $router->get('/catalog/templates', static fn (Request $request) => $catalog->list($request));
+    $router->get('/catalog/preview', static fn (Request $request) => $catalog->preview($request));
+    $router->post('/catalog/add', static fn (Request $request) => $catalog->addToFolder($request));
+    $router->post('/catalog/remove', static fn (Request $request) => $catalog->removeFromFolder($request));
+    $router->post('/catalog/reorder', static fn (Request $request) => $catalog->reorderFolder($request));
 };

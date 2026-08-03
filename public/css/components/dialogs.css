@@ -86,3 +86,30 @@
 .folder-row {
     align-items: flex-start;
 }
+
+/* Dokumentenkatalog: Reihenfolge- und Entfernen-Aktionen je Dokument */
+.folder-document[draggable="true"] {
+    cursor: grab;
+}
+
+.folder-document-controls {
+    display: inline-flex;
+    gap: var(--space-1);
+    margin-left: auto;
+}
+
+/* Dokumentenkatalog: Vorlagenauswahl im Hinzufügen-Dialog */
+.catalog-template-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+}
+
+.catalog-template-row > div {
+    flex: 1;
+}
+
+.catalog-template-row .patient-actions {
+    margin-left: auto;
+}

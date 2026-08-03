@@ -7,6 +7,15 @@
 5. Signatur inkl. optionaler E-Mail-Zustimmung erfassen
 6. Abschlussseite erzeugen und Gesamt-PDF speichern
 
+## Dokumente aus dem Katalog zur Patientenmappe hinzufügen
+
+1. Im Dashboard die Kachel „Patientenmappen“ öffnen und beim gewünschten Patienten „Dokument hinzufügen“ wählen.
+2. Vorlage über Suche oder Kategoriefilter finden; „Vorschau“ zeigt die Original-PDF.
+3. Ein oder mehrere Dokumente ankreuzen und „Hinzufügen“ bestätigen.
+4. Die Dokumente werden automatisch mit den Patientendaten personalisiert (Fallnummer, Name usw.) und erscheinen sofort mit Status „Bereit zur Unterschrift“ in der Mappe – für Patienten nicht von importierten Dokumenten unterscheidbar.
+5. Reihenfolge ändern: Dokumente per Pfeiltasten (▲/▼) oder Ziehen mit der Maus umsortieren – die Reihenfolge bestimmt die Anzeige im Patientenmodus.
+6. Entfernen: Noch nicht unterschriebene Dokumente können über „✕“ wieder aus der Mappe entfernt werden.
+
 ## Patientenmappe an ein iPad senden
 
 1. Im Dashboard beim wartenden Patienten „An Gerät senden“ wählen.

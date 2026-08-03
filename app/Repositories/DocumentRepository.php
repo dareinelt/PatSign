@@ -18,6 +18,47 @@ final class DocumentRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Personalisierte Arbeitskopie aus dem Dokumentenkatalog anlegen:
+     * eigene Dokument-ID, Verweis auf die verwendete Vorlagenversion,
+     * Patientenbezug und Position in der Mappe.
+     *
+     * @param array<string,mixed> $data
+     */
+    public function createFromTemplate(array $data): int
+    {
+        $sql = 'INSERT INTO documents (document_id, original_path, document_type, case_number, first_name, last_name, birth_date, patient_key, status, patient_folder_id, template_version_id, sort_order)
+                VALUES (:document_id, :original_path, :document_type, :case_number, :first_name, :last_name, :birth_date, :patient_key, :status, :patient_folder_id, :template_version_id, :sort_order)';
+        $this->pdo->prepare($sql)->execute($data);
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    /** Nächste Sortierposition innerhalb einer Mappe (Fallnummer). */
+    public function nextSortOrder(string $caseNumber): int
+    {
+        $stmt = $this->pdo->prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM documents WHERE case_number = :cn');
+        $stmt->execute(['cn' => $caseNumber]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Reihenfolge der Dokumente einer Mappe neu setzen. Nur Dokumente der
+     * angegebenen Fallnummer werden berücksichtigt (serverseitige Prüfung).
+     *
+     * @param list<int> $orderedDocumentIds
+     */
+    public function reorderByCaseNumber(string $caseNumber, array $orderedDocumentIds): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE documents SET sort_order = :sort_order WHERE id = :id AND case_number = :cn');
+        $position = 1;
+        foreach ($orderedDocumentIds as $documentId) {
+            $stmt->execute(['sort_order' => $position, 'id' => (int) $documentId, 'cn' => $caseNumber]);
+            $position++;
+        }
+    }
+
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE id = :id LIMIT 1');
@@ -130,7 +171,7 @@ final class DocumentRepository
         $sql = "SELECT id, case_number, document_type, status, is_interactive, form_status, created_at
                 FROM documents
                 WHERE case_number IN ($placeholders)
-                ORDER BY case_number, created_at";
+                ORDER BY case_number, sort_order, created_at";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(array_values($caseNumbers));
 
@@ -177,7 +218,7 @@ final class DocumentRepository
     /** @return array<int,array<string,mixed>> */
     public function findByCaseNumber(string $caseNumber): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE case_number = :case_number ORDER BY created_at');
+        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE case_number = :case_number ORDER BY sort_order, created_at');
         $stmt->execute(['case_number' => $caseNumber]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -196,7 +237,7 @@ final class DocumentRepository
             "SELECT * FROM documents
              WHERE case_number = :case_number
                AND status NOT IN ('signed','sent','archived')
-             ORDER BY created_at"
+             ORDER BY sort_order, created_at"
         );
         $stmt->execute(['case_number' => $caseNumber]);
 
@@ -281,7 +322,7 @@ final class DocumentRepository
     /** @return array<int,array<string,mixed>> */
     public function findByFolderId(int $folderId): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE patient_folder_id = :id ORDER BY created_at');
+        $stmt = $this->pdo->prepare('SELECT * FROM documents WHERE patient_folder_id = :id ORDER BY sort_order, created_at');
         $stmt->execute(['id' => $folderId]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
