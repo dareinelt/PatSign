@@ -28,8 +28,12 @@
             });
         }
 
-        function drawStroke(ctx, width, height, stroke) {
-            if (stroke.points.length === 0) {
+        /* Zeichnet den Strich ab dem Punkt "from" (Standard: alles).
+           Beim Fortschreiben eines Striches genügt das letzte Teilstück,
+           damit nicht bei jeder Bewegung die ganze Seite neu gemalt wird. */
+        function drawStroke(ctx, width, height, stroke, from) {
+            var start = Math.max(0, (from || 0) - 1);
+            if (stroke.points.length === 0 || start >= stroke.points.length) {
                 return;
             }
             ctx.strokeStyle = STROKE_COLOR;
@@ -37,8 +41,8 @@
             ctx.lineJoin = "round";
             ctx.lineWidth = Math.max(1, STROKE_WIDTH_REL * width);
             ctx.beginPath();
-            ctx.moveTo(stroke.points[0].x * width, stroke.points[0].y * height);
-            for (var i = 1; i < stroke.points.length; i += 1) {
+            ctx.moveTo(stroke.points[start].x * width, stroke.points[start].y * height);
+            for (var i = start + 1; i < stroke.points.length; i += 1) {
                 ctx.lineTo(stroke.points[i].x * width, stroke.points[i].y * height);
             }
             if (stroke.points.length === 1) {
@@ -51,6 +55,9 @@
             var page = pages[pageNumber];
             if (!page || !page.ctx) {
                 return;
+            }
+            if (typeof page.abortStroke === "function") {
+                page.abortStroke();
             }
             page.ctx.clearRect(0, 0, page.canvas.width, page.canvas.height);
             pageStrokes(pageNumber).forEach(function (stroke) {
@@ -78,7 +85,40 @@
             redrawPage(pageNumber);
 
             var current = null;
+            var drawnPoints = 0;
+            var frame = null;
             var touchScroll = null;
+
+            /* Nur das neu hinzugekommene Teilstück zeichnen, gebündelt im
+               nächsten Animationsframe. Das hält die Eingabe flüssig, auch
+               wenn der Stift viele Ereignisse pro Sekunde liefert. */
+            function scheduleDraw() {
+                if (frame !== null) {
+                    return;
+                }
+                frame = window.requestAnimationFrame(function () {
+                    frame = null;
+                    if (!current || !pages[pageNumber]) {
+                        return;
+                    }
+                    var page = pages[pageNumber];
+                    drawStroke(page.ctx, page.canvas.width, page.canvas.height, current, drawnPoints);
+                    drawnPoints = current.points.length;
+                });
+            }
+
+            function cancelDraw() {
+                if (frame !== null) {
+                    window.cancelAnimationFrame(frame);
+                    frame = null;
+                }
+            }
+
+            pages[pageNumber].abortStroke = function () {
+                cancelDraw();
+                current = null;
+                drawnPoints = 0;
+            };
 
             function scrollParent() {
                 var node = canvas.parentElement;
@@ -91,9 +131,11 @@
                 return null;
             }
 
-            function position(event) {
-                var box = canvas.getBoundingClientRect();
-                if (box.width === 0 || box.height === 0) {
+            /* Die Canvas-Position wird je Ereignis nur einmal ermittelt;
+               ein getBoundingClientRect() pro Punkt würde bei vielen
+               Zwischenpunkten das Layout unnötig oft neu berechnen. */
+            function position(event, box) {
+                if (!box || box.width === 0 || box.height === 0) {
                     return null;
                 }
                 return {
@@ -110,14 +152,15 @@
                     return;
                 }
                 event.preventDefault();
-                var pos = position(event);
+                var pos = position(event, canvas.getBoundingClientRect());
                 if (!pos) {
                     return;
                 }
                 canvas.setPointerCapture(event.pointerId);
                 current = { page: pageNumber, points: [pos] };
+                drawnPoints = 0;
                 strokes.push(current);
-                redrawPage(pageNumber);
+                scheduleDraw();
                 notify();
             });
 
@@ -133,15 +176,40 @@
                     return;
                 }
                 event.preventDefault();
-                var pos = position(event);
-                if (pos) {
-                    current.points.push(pos);
-                    redrawPage(pageNumber);
+                var events = typeof event.getCoalescedEvents === "function"
+                    ? event.getCoalescedEvents()
+                    : null;
+                if (!events || events.length === 0) {
+                    events = [event];
+                }
+                var box = canvas.getBoundingClientRect();
+                var added = false;
+                events.forEach(function (item) {
+                    var pos = position(item, box);
+                    if (pos) {
+                        current.points.push(pos);
+                        added = true;
+                    }
+                });
+                if (added) {
+                    scheduleDraw();
                 }
             });
 
             ["pointerup", "pointercancel"].forEach(function (type) {
-                canvas.addEventListener(type, function () {
+                canvas.addEventListener(type, function (event) {
+                    if (current) {
+                        var pos = position(event, canvas.getBoundingClientRect());
+                        if (pos) {
+                            current.points.push(pos);
+                        }
+                        cancelDraw();
+                        var page = pages[pageNumber];
+                        if (page) {
+                            drawStroke(page.ctx, page.canvas.width, page.canvas.height, current, drawnPoints);
+                        }
+                        drawnPoints = 0;
+                    }
                     current = null;
                     touchScroll = null;
                 });
